@@ -3,17 +3,20 @@ import util from 'util';
 
 import d3 from 'd3';
 import lodash from 'lodash';
+import seedrandom from 'seedrandom';
+
+let rng = seedrandom('hello');
 
 var width = 400,
     height = 600;
 
-let scale = .5;
+let scale = .6;
 width *= scale;
 height *= scale;
 
 var circles = _.times(10, () => {
     return {
-        r: 20 + Math.random() * 20
+        r: 20 + rng() * 20
     }
 });
 
@@ -72,7 +75,7 @@ function getRectangle(aspectRatio, area) {
 function layout(data, width, height, options) {
     options = _.assign({
         // Number of times to try to layout each circle
-        attempts: 30,
+        attempts: 100,
         // Accessor function to get the radius of an input circle
         radius: data => data.r
     }, options);
@@ -96,8 +99,8 @@ function layout(data, width, height, options) {
 
         let placed = false;
         for(let attempt = 0; attempt < options.attempts; attempt++) {
-            let x = radius + (Math.random() * (width - radius * 2));
-            let y = radius + (Math.random() * (height - radius * 2));
+            let x = radius + (rng() * (width - radius * 2));
+            let y = radius + (rng() * (height - radius * 2));
 
             // Check for collisions
             let collision = false;
