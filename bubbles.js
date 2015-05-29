@@ -11,9 +11,10 @@ function render() {
     var width = 400,
         height = 600;
 
-    var circles = _.times(10, () => {
+    var circles = _.times(1000, () => {
+        let e = 50;
         return {
-            r: 20 + rng() * 20
+            r: (Math.pow(2, e) / 10) + Math.pow(1 + rng(), e)
         }
     });
 
