@@ -173,7 +173,8 @@ class BubbleLayout {
             // loop.
             let layoutArea = circlesArea + circlesArea * freeSpaceRatio;
             // Calculate the rectangle with the layout aspect and area
-            let [w, h] = getRectangle(this.options.aspectRatio, layoutArea);
+            let rect = getRectangle(this.options.aspectRatio, layoutArea);
+            let w = rect[0], h = rect[1];
 
             let layout = this._tryLayout(circles, w, h);
 
@@ -283,7 +284,8 @@ class NaiveCollisionDetection {
     collides(cx, cy, radius) {
         let circles = this.circles;
         for(let i = 0; i < circles.length; i++) {
-            let [ocx, ocy, oradius] = circles[i];
+            let circle = circles[i];
+            let ocx = circle[0], ocy = circle[1], oradius = circle[2];
             let distance = Math.sqrt(
                     Math.pow(ocx - cx, 2) + Math.pow(ocy - cy, 2));
             if(distance < radius + oradius)
