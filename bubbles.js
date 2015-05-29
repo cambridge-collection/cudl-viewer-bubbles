@@ -5,47 +5,60 @@ import d3 from 'd3';
 import lodash from 'lodash';
 import seedrandom from 'seedrandom';
 
-let rng = seedrandom('hello');
+function render() {
+    let rng = seedrandom();
 
-var width = 400,
-    height = 600;
+    var width = 400,
+        height = 600;
 
-let scale = .6;
-width *= scale;
-height *= scale;
+    var circles = _.times(10, () => {
+        return {
+            r: 20 + rng() * 20
+        }
+    });
 
-var circles = _.times(10, () => {
-    return {
-        r: 20 + rng() * 20
-    }
-});
+    let start = performance.now();
 
-circles = _.sortBy(circles, (circle) => -circle.r);
+    // Lay out the circles on a rectangle
+    let layout = bubbleLayout({
+        aspectRatio: width / height,
+        rng: rng,
+        radius: circle => circle.r,
+        attempts: 2000,
+        initialFreeSpaceRatio: 1.3
+    })(circles);
 
-let circlesArea = _(circles).map(area).sum();
-console.log(util.format('space used: %s%%', (circlesArea / (width * height)) * 100));
+    let elapsed = performance.now() - start;
 
-let layedCircles = layout(circles, width, height);
+    console.log(util.format('space used: %s%%, fsr: %s, %sms', 
+        (layout.meta.circlesArea / (layout.width * layout.height)) * 100), 
+        layout.meta.freeSpaceRatio, elapsed);
 
-var chart = d3.select(".chart")
-    .attr("width", width)
-    .attr("height", height)
-    .selectAll('circle')
-        .data(layedCircles)
-        .enter().append("circle")
-            .attr('cx', (d) => d.x)
-            .attr('cy', (d) => d.y)
-            .attr('r', (d) => d.radius)
-            .attr('class', 'bubble');
+    // Transform the layout's normalised coordinate space to screen space.
+    // The x and y axis have the same scale.
+    let scale = d3.scale.linear()
+        .domain([0, layout.width])
+        .range([0, width]);
 
-
-function normalize(circles) {
-    let max = _(circles).map(c => c.r).max();
-    return _.map(circles, c => _.assign({}, c, {r: c.r / max}));
+    // Render the bubbles
+    var circle = d3.select(".chart")
+        .attr("width", width)
+        .attr("height", height)
+        .selectAll('circle')
+            .data(layout.circles)
+            .attr('cx', (c) => scale(c.x))
+            .attr('cy', (c) => scale(c.y))
+            .attr('r', (c) => scale(c.radius));
+    circle.enter().append("circle")
+        .attr('cx', (c) => scale(c.x))
+        .attr('cy', (c) => scale(c.y))
+        .attr('r', (c) => scale(c.radius))
+        .attr('class', 'bubble');
+    circle.exit().remove();
 }
 
-function area(circle) {
-    return Math.PI * circle.r * circle.r;
+function circleArea(radius) {
+    return Math.PI * radius * radius;
 }
 
 /**
@@ -56,78 +69,228 @@ function area(circle) {
  */
 function getRectangle(aspectRatio, area) {
     let w = aspectRatio;
-    let h = 1 / aspectRatio;
-    // w * h = 1
+    let h = 1;
+    // w * h = 1 (area = 1)
     let sqrtArea = Math.sqrt(area);
     return [w * sqrtArea, h * sqrtArea];
 }
 
 /**
- * Lay out circles in a rectangle of width and height.
+ * Create a d3 layout function which randomly lays out circles in a rectangle.
  *
  * A random, greedy strategy is used for the layout: The circles are placed
  * in a random location, starting with the largest circle and progressing in
  * order of size until the smallest is placed last.
- *
- * @param [array] circles An array of objects representing the circles to lay out
- * @param  [object] options Additional layout options
  */
-function layout(data, width, height, options) {
-    options = _.assign({
-        // Number of times to try to layout each circle
-        attempts: 100,
-        // Accessor function to get the radius of an input circle
-        radius: data => data.r
-    }, options);
+function bubbleLayout(options) {
+    let layout = new BubbleLayout(options);
+    return layout.layout.bind(layout);
+}
 
-    // Wrap each circle in our own layout object representing the position of
-    // the circle in the layout.
-    let circles = _(data).map(data => ({
-        radius: options.radius(data),
-        data: data
-    })).value();
+class BubbleLayout {
+    constructor(options) {
+        this.options = _.assign({
+            // The aspect ratio of the rectangle to layout the bubbles in.
+            // Default is square (1/1)
+            aspectRatio: 1,
+            // The initial area of the layout rectangle, specified as the
+            // ratio of (la - ba) / ba where la = layout area and 
+            // ba = bubble area
+            // i.e. 0 means the layout rectangle has the same area as the sum of
+            // the areas of the bubbles to be layed out. 1 means the layout
+            // rectangle has twice the area of the circles. 2 means the layout
+            // rectangle has three times the area of the circles, etc.
+            initialFreeSpaceRatio: 0,
 
-    // We layout from the largest to smallest
-    circles = _.sortBy(circles, (circle) => -circle.radius);
+            // Function to produce an easier free space ratio to lay out with
+            // when a solution is not found for a ratio. Must return a ratio
+            // > than the input. Default gives 10% more free space each attempt.
+            ease: (ratio, circlesArea) => {
+                let freeSpace = circlesArea * ratio;
+                let easedSpace = freeSpace + circlesArea * 0.1;
+                return easedSpace / circlesArea;
+            },
 
-    for(let i = 0; i < circles.length; i++) {
-        let circle = circles[i];
-        let radius = circle.radius;
+            // The PRNG to generate randomness
+            rng: seedrandom(),
+            // The maximum number of times to try to place each circle
+            attempts: 100,
+            // Accessor function to get the radius of an input value
+            radius: data => data.r,
 
-        assert(width >= radius);
-        assert(height >= radius);
+            // The collision detection strategy to use. 
+            // Default is simple O(n^2) (compare everything to everything)
+            // strategy which may well be faster than building a quadtree for
+            // small numbers of bubbles.
+            collision: NaiveCollisionDetection.create
 
-        let placed = false;
-        for(let attempt = 0; attempt < options.attempts; attempt++) {
-            let x = radius + (rng() * (width - radius * 2));
-            let y = radius + (rng() * (height - radius * 2));
+        }, options);
 
-            // Check for collisions
-            let collision = false;
-            for(let j = 0; j < i; j++) {
-                let other = circles[j];
-                let dist = Math.sqrt(
-                    Math.pow(other.x - x, 2) + Math.pow(other.y - y, 2))
-                if(dist < other.radius + radius) {
-                    collision = true;
+        if(options.initialFreeSpaceRatio < 0) {
+            // Values < 0 mean the layout rect has less area than the circles to
+            // lay out, which clearly makes no sense.
+            throw new Error(util.format('initialFreeSpaceRatio was < 0: %s', 
+                                        options.initialFreeSpaceRatio));
+        }
+
+        if(options.attempts < 1) {
+            throw new Error(util.format(
+                'options.attempts must be >= 1, got: %s', options.attempts));
+        }
+    }
+
+    _createLayoutCircles(values) {
+        // Wrap each circle in our own layout object representing the position of
+        // the circle in the layout.
+        let circles = _(values).map(value => ({
+            radius: this.options.radius(value),
+            data: value
+        })).sortBy(circle => -circle.radius).value();
+
+        // Normalise the radiuses so that the largest radius is 1
+        let max = _(circles).map(c => c.radius).max();
+        _.each(circles, circle => circle.radius = circle.radius / max);
+
+        return circles;
+    }
+
+    layout(values) {
+        let freeSpaceRatio = this.options.initialFreeSpaceRatio;
+
+        let circles = this._createLayoutCircles(values);
+
+        // The area covered by all circles in our layout
+        let circlesArea = _(circles).map(circle => circleArea(circle.radius))
+                                    .sum();
+
+        // As long as our ease() function always generates an easier (larger)
+        // layout area, we'll eventually find a solution. (Of course the rng
+        // also must produce a reasonable distribution).
+        let eases = 0;
+        while(true) {
+            // The area available to lay out the circles. This increases each
+            // loop.
+            let layoutArea = circlesArea + circlesArea * freeSpaceRatio;
+            // Calculate the rectangle with the layout aspect and area
+            let [w, h] = getRectangle(this.options.aspectRatio, layoutArea);
+
+            let layout = this._tryLayout(circles, w, h);
+
+            if(layout !== null) {
+                assert(_.isObject(layout));
+
+                // Some incidental metadata on the generated layout
+                layout.meta = {
+                    freeSpaceRatio: freeSpaceRatio,
+                    circlesArea: circlesArea,
+                    eases: eases,
+                    options: this.options
+                };
+                return layout;
+            }
+
+            // Make the layout area a little bigger (e.g. easier to find a
+            // solution) before trying again.
+            freeSpaceRatio = this._ease(freeSpaceRatio, circlesArea);
+            eases++;
+        }
+    }
+
+    _ease(freeSpaceRatio, circlesArea) {
+        let eased = this.options.ease(freeSpaceRatio, circlesArea);
+
+        if(isNaN(eased)) {
+            throw new Error(util.format('options.ease(%s, %s) returned NaN',
+                                        freeSpaceRatio, circlesArea));
+        }
+
+        // Ensure the ratio increases, otherwise the main loop may never
+        // terminate
+        if(eased <= freeSpaceRatio) {
+            throw new Error(util.format(
+                "freeSpaceRatio was not increased. options.ease(%s, %s) = %s",
+                freeSpaceRatio, circlesArea, eased));
+        }
+        return eased;
+    }
+
+    _tryLayout(circles, w, h) {
+        let collision = this.options.collision(w, h);
+        let attempts = this.options.attempts;
+        let rng = this.options.rng;
+
+        assert(attempts > 0);
+
+        for(let i = 0; i < circles.length; i++) {
+            let circle = circles[i];
+            let radius = circle.radius;
+
+            // Can't lay out if the area isn't long or wide enough
+            if(w < radius || h < radius) {
+                return null;
+            }
+
+            let placed = false;
+            for(let j = 0; j < attempts; j++) {
+                // Generate a random location for the circle within the layout
+                let x = radius + (rng() * (w - radius * 2));
+                let y = radius + (rng() * (h - radius * 2));
+
+                if(!collision.collides(x, y, radius)) {
+                    // Record the successful placement location
+                    circle.x = x;
+                    circle.y = y;
+                    placed = true;
+                    collision.add(x, y, radius);
                     break;
                 }
             }
 
-            if(!collision) {
-                circle.x = x;
-                circle.y = y;
-                placed = true;
-                break;
+            if(!placed) {
+                return null;
             }
         }
 
-        if(!placed) {
-            throw new Error(util.format(
-                'Unable to place circle %d (%d remaining)',
-                i + 1, circles.length - i));
+        // The completed layout
+        return {
+            width: w,
+            height: h,
+            circles: circles
         }
     }
-
-    return circles;
 }
+
+class NaiveCollisionDetection {
+    static create(width, height) {
+        return new NaiveCollisionDetection(width, height);
+    }
+
+    constructor(width, height) {
+        assert(width > 0);
+        assert(height > 0);
+
+        this.width = width;
+        this.height = height;
+
+        this.circles = [];
+    }
+
+    add(cx, cy, radius) {
+        this.circles.push([cx, cy, radius]);
+    }
+
+    collides(cx, cy, radius) {
+        let circles = this.circles;
+        for(let i = 0; i < circles.length; i++) {
+            let [ocx, ocy, oradius] = circles[i];
+            let distance = Math.sqrt(
+                    Math.pow(ocx - cx, 2) + Math.pow(ocy - cy, 2));
+            if(distance < radius + oradius)
+                return true;
+        }
+        return false;
+    }
+}
+
+// render();
+document.querySelector('button').addEventListener('click', () => render());
