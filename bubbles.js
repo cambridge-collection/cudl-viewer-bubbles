@@ -26,7 +26,8 @@ function render() {
         rng: rng,
         radius: circle => circle.r,
         attempts: 2000,
-        initialFreeSpaceRatio: 1.3
+        initialFreeSpaceRatio: 1.3,
+        padding:  0.1
     })(circles);
 
     let elapsed = performance.now() - start;
@@ -123,7 +124,11 @@ class BubbleLayout {
             // Default is simple O(n^2) (compare everything to everything)
             // strategy which may well be faster than building a quadtree for
             // small numbers of bubbles.
-            collision: NaiveCollisionDetection.create
+            collision: NaiveCollisionDetection.create,
+
+            // proportion of the radius of the maximum circle to pad between
+            // neighbouring circles
+            padding:  0
 
         }, options);
 
@@ -137,6 +142,11 @@ class BubbleLayout {
         if(options.attempts < 1) {
             throw new Error(util.format(
                 'options.attempts must be >= 1, got: %s', options.attempts));
+        }
+
+        if(options.padding < 0) {
+            throw new Error(util.format(
+                'options.padding must be >= 0, got: %s', options.padding));
         }
     }
 
@@ -159,10 +169,15 @@ class BubbleLayout {
         let freeSpaceRatio = this.options.initialFreeSpaceRatio;
 
         let circles = this._createLayoutCircles(values);
+        let padding = this.options.padding;
 
         // The area covered by all circles in our layout
-        let circlesArea = _(circles).map(circle => circleArea(circle.radius))
-                                    .sum();
+        let circlesArea = _(circles)
+            // Area includes the extra radius for padding. Note that circles
+            // are normalised, so the largest circle is radius 1, therefore
+            // maxRadius * padding = 1 * padding = padding
+            .map(circle => circleArea(circle.radius + (padding / 2)))
+            .sum();
 
         // As long as our ease() function always generates an easier (larger)
         // layout area, we'll eventually find a solution. (Of course the rng
@@ -220,6 +235,7 @@ class BubbleLayout {
         let collision = this.options.collision(w, h);
         let attempts = this.options.attempts;
         let rng = this.options.rng;
+        let padding = this.options.padding;
 
         assert(attempts > 0);
 
@@ -238,12 +254,12 @@ class BubbleLayout {
                 let x = radius + (rng() * (w - radius * 2));
                 let y = radius + (rng() * (h - radius * 2));
 
-                if(!collision.collides(x, y, radius)) {
+                if(!collision.collides(x, y, radius + (padding / 2))) {
                     // Record the successful placement location
                     circle.x = x;
                     circle.y = y;
                     placed = true;
-                    collision.add(x, y, radius);
+                    collision.add(x, y, radius + (padding / 2));
                     break;
                 }
             }
