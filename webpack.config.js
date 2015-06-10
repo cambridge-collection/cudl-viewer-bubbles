@@ -3,7 +3,7 @@ var path = require('path');
 module.exports = {
     // configuration
     context: __dirname,
-    entry: './bubbles',
+    entry: './src/index',
     devtool: 'source-map',
     stats: {
         colors: true,
@@ -11,8 +11,18 @@ module.exports = {
     },
     output: {
         path: path.join(__dirname, 'dist'),
-        filename: 'bundle.js'
+        filename: 'similarity.js',
+        library: 'similarity'
     },
+    externals: [
+        // Map external dependencies provided by cudl-viewer where we're loaded
+        {
+            // jQuery is already present in the cudl site
+            'jquery': 'var jQuery',
+            // The cudl global properties and functions
+            'cudl': 'var cudl'
+        }
+    ],
     module: {
         loaders: [
             {
