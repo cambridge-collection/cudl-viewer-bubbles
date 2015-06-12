@@ -3,7 +3,7 @@ var path = require('path');
 module.exports = {
     // configuration
     context: __dirname,
-    entry: './src/index',
+    entry: './src/bootstrap',
     devtool: 'source-map',
     stats: {
         colors: true,
@@ -20,7 +20,8 @@ module.exports = {
             // jQuery is already present in the cudl site
             'jquery': 'var jQuery',
             // The cudl global properties and functions
-            'cudl': 'var cudl'
+            'cudl': 'var cudl',
+            'spin': 'var Spinner'
         }
     ],
     module: {
