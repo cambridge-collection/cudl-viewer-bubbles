@@ -16,7 +16,7 @@ function makeStateMachine() {
         // - loading
         events: [
             { name: 'startLoading',
-              from: ['uninitialised', 'idle', 'failed'],
+              from: ['uninitialised', 'idle', 'failed', 'loading'],
               to: 'loading' },
             { name: 'finishLoading', from: 'loading', to: 'idle' },
             { name: 'fail', from: 'loading', to: 'failed' }
@@ -42,6 +42,7 @@ export default class SimilarityModel {
         this.cudlService = cudlService
         this.fsm = makeStateMachine();
         this.similarity = null;
+        this.similarityPromise = null;
         this.similarityIdentifier = null;
         this.abortCurrentReq = null;
 
@@ -82,27 +83,28 @@ export default class SimilarityModel {
 
         this.fsm.startLoading();
 
-        this.similarity = null;
+        let {similarity: similarityPromise, abort} = this.cudlService
+            .getSimilarItems(this.itemMetadata.getItemId(), simId);
+
         this.similarityIdentifier = simId;
-
-        let {similarity, abort} = this.cudlService.getSimilarItems(
-            this.itemMetadata.getItemId(), simId);
-
-        this.similarity = similarity;
+        this.similarityPromise = similarityPromise;
+        this.similarity = null;
         this.abortCurrentReq = abort;
 
-        similarity.then(() => {
-            if(this.similarity === similarity) {
+        // Defer to avoid unrelated errors in code listening for state change
+        // failing our promise.
+        similarityPromise.then((similarity) => {
+            if(this.similarityPromise === similarityPromise) {
+                this.similarity = similarity;
                 assert(this.fsm.is('loading'));
                 this.fsm.finishLoading();
             }
-        })
-        similarity.fail(() => {
-            if(this.similarity === similarity) {
+        }).fail(() => {
+            if(this.similarityPromise === similarityPromise) {
                 assert(this.fsm.is('loading'));
                 this.fsm.fail();
             }
-        });
+        }).done();
     }
 
     /**

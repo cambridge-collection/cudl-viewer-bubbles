@@ -14,7 +14,8 @@ function render() {
     var circles = _.times(1000, () => {
         let e = 50;
         return {
-            r: (Math.pow(2, e) / 10) + Math.pow(1 + rng(), e)
+            //r: (Math.pow(2, e) / 10) + Math.pow(1 + rng(), e)
+            r: 0.5 + rng()
         }
     });
 

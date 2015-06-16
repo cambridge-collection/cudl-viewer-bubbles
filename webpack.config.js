@@ -30,6 +30,10 @@ module.exports = {
                 test: /\.js$/, exclude: /node_modules/,
                 loader: require.resolve('babel-loader')
             },
+            {
+                test: /\.jade$/, exclude: /node_modules/,
+                loader: require.resolve('jade-loader')
+            }
         ]
     }
 };

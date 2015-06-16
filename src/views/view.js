@@ -6,12 +6,19 @@ import $ from 'jquery';
  */
 export default class View {
     constructor(options) {
-        this.el = options.el || document.createElement("div");
-        assert(this.el instanceof Element, "el must be an Element", this.el);
-        this.setEl(options.el);
+        this.className = options.className || this.className || null;
+        this.id = options.id || this.id || null;
+
+        var el = options.el || this.createElement();
+        assert(el instanceof Element, "el must be an Element", el);
+        this.setEl(el);
     }
 
-    setEl: function setEl(el) {
+    createElement() {
+        return $('<div>').addClass(this.className).attr('id', this.id)[0];
+    }
+
+    setEl(el) {
         this.$el = $(el).first();
         this.el = this.$el[0];
     }

@@ -7,6 +7,7 @@ import cudl from 'cudl';
 import Metadata from './models/metadata';
 import CudlService from './cudlservice';
 import SimilarityModel from './models/similaritymodel';
+import { RootSimilarityView } from './views';
 
 
 export default function setupSimilarityTab(data, docId) {
@@ -17,11 +18,16 @@ export default function setupSimilarityTab(data, docId) {
     $(cudl).on('change.cudl.pagenum', (e, page) =>
         similarityModel.setPage(page - 1));
 
+    $(similarityModel).on('change:state',
+        () => console.log('change:state', similarityModel.getState()));
+
     // Load the first/current page
     similarityModel.setPage(cudl.pagenum - 1);  // We use 0-based page indexes
 
-    $(similarityModel).on('change:state',
-        () => console.log(similarityModel.getState()));
+    var view = new RootSimilarityView({
+        el: $('#similaritems .similarity-container')[0],
+        model: similarityModel
+    }).render();
 }
 
 /*
