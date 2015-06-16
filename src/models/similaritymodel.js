@@ -25,7 +25,7 @@ function makeStateMachine() {
 }
 
 export default class SimilarityModel {
-    constructor(itemMetadata, cudlService) {
+    constructor(itemMetadata, cudlService, loadingModel) {
         if(!(itemMetadata instanceof Metadata))
             throw new ValueError(`itemMetadata should be a Metadata instance,` +
                                  ` got: ${itemMetadata}`);
@@ -39,7 +39,8 @@ export default class SimilarityModel {
                                  `instance, got: ${cudlService}`);
 
         this.itemMetadata = itemMetadata;
-        this.cudlService = cudlService
+        this.cudlService = cudlService;
+        this.loadingModel = loadingModel;
         this.fsm = makeStateMachine();
         this.similarity = null;
         this.similarityPromise = null;
@@ -50,7 +51,9 @@ export default class SimilarityModel {
     }
 
     onenterstate(event, from, to) {
-        $(this).trigger('change:state');
+        // Defer the event trigger to prevent errors in event handlers
+        // affecting us.
+        _.defer(() => $(this).trigger('change:state'));
     }
 
     /**
@@ -85,6 +88,7 @@ export default class SimilarityModel {
 
         let {similarity: similarityPromise, abort} = this.cudlService
             .getSimilarItems(this.itemMetadata.getItemId(), simId);
+        let loadingToken = this.loadingModel.startLoading();
 
         this.similarityIdentifier = simId;
         this.similarityPromise = similarityPromise;
@@ -99,11 +103,15 @@ export default class SimilarityModel {
                 assert(this.fsm.is('loading'));
                 this.fsm.finishLoading();
             }
+            // Defer marking loading as finished to allow those dependant on our
+            // defered event triggers to start loading before we stop.
+            _.defer(() => loadingToken.markStopped());
         }).fail(() => {
             if(this.similarityPromise === similarityPromise) {
                 assert(this.fsm.is('loading'));
                 this.fsm.fail();
             }
+            _.defer(() => loadingToken.markStopped());
         }).done();
     }
 

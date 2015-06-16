@@ -11,24 +11,50 @@ import failedTemplate from '../../templates/failed.jade';
 export class RootSimilarityView extends View {
     constructor(options) {
         super(options);
-        this.model = options.model;
+        this.model = options.similarityModel;
+        this.loadingModel = options.loadingModel;
+        this.viewportModel = options.viewportModel;
 
         $(this.model).on('change:state', this.render.bind(this));
+
+        this._isVisible = options.isVisible || false;
+        this.loadingView = null;
+    }
+
+    setVisible(isVisible) {
+        if((!!isVisible) !== this._isVisible) {
+            this._isVisible = !!isVisible;
+            $(this).trigger('change:visibility');
+        }
+    }
+
+    isVisible() {
+        return this._isVisible;
+    }
+
+    renderLoadingView() {
+        if(this.loadingView === null) {
+            this.loadingView = new LoadingView({
+                el: this.el, // Share our el
+                model: this.loadingModel
+            });
+        }
     }
 
     render() {
+        this.renderLoadingView();
+
         var state = this.model.getState();
         var view = null;
 
         if(state === 'idle') {
             view = new BubbleView({
-                model: this.model
+                similarity: this.model.similarity,
+                similarityIdentifier: this.model.similarityIdentifier,
+                viewportModel: this.viewportModel
             })
         }
         else if(state === 'loading') {
-            view = new LoadingStateView({
-                model: this.model
-            });
         }
         else if(state === 'failed') {
             view = new FailedStateView({
@@ -41,7 +67,8 @@ export class RootSimilarityView extends View {
 
         this.$el.empty();
         if(view) {
-            this.$el.append(view.render().el);
+            this.$el.append(view.el);
+            view.render();
         }
         return this;
     }
@@ -56,9 +83,11 @@ class FailedStateView extends View {
 }
 
 
-class LoadingStateView extends View {
+class LoadingView extends View {
     constructor(options) {
         super(options);
+
+        this.model = options.model;
 
         this.spinOpts = options.spinOpts || {
             scale: 2,
@@ -68,13 +97,20 @@ class LoadingStateView extends View {
             left: '50%',
             className: 'blah-spinner'
         };
+        this.spinner = new Spinner(this.spinOpts);
+
+        $(this.model).on('change:loading', this.render.bind(this));
     }
 
     render() {
-        this.spinner = new Spinner(this.spinOpts).spin(this.el);
+        if(this.model.isLoading())
+            this.spinner.spin(this.el);
+        else
+            this.spinner.stop();
+
         return this;
     }
 }
-_.assign(LoadingStateView.prototype, {
+_.assign(LoadingView.prototype, {
     className: 'loading'
 });

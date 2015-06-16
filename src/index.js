@@ -7,13 +7,17 @@ import cudl from 'cudl';
 import Metadata from './models/metadata';
 import CudlService from './cudlservice';
 import SimilarityModel from './models/similaritymodel';
+import LoadingModel from './models/loadingmodel';
+import ViewportModel from './models/viewportmodel';
 import { RootSimilarityView } from './views';
 
 
 export default function setupSimilarityTab(data, docId) {
     let metadata = new Metadata(data, docId);
     let cudlService = new CudlService(url.resolve(cudl.services, '/v1/'));
-    let similarityModel = new SimilarityModel(metadata, cudlService);
+    let loadingModel = new LoadingModel();
+    let similarityModel = new SimilarityModel(metadata, cudlService, loadingModel);
+    let viewportModel = new ViewportModel();
 
     $(cudl).on('change.cudl.pagenum', (e, page) =>
         similarityModel.setPage(page - 1));
@@ -26,8 +30,15 @@ export default function setupSimilarityTab(data, docId) {
 
     var view = new RootSimilarityView({
         el: $('#similaritems .similarity-container')[0],
-        model: similarityModel
+        similarityModel: similarityModel,
+        loadingModel: loadingModel,
+        viewportModel: viewportModel
     }).render();
+
+    // Watch for our tab being shown/hidden
+    $('#similaritemstab').on('shown.bs.tab', e => {
+        viewportModel.setDimensions(view.$el.width(), view.$el.height());
+    });
 }
 
 /*

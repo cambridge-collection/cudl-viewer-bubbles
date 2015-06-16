@@ -5,60 +5,6 @@ import d3 from 'd3';
 import lodash from 'lodash';
 import seedrandom from 'seedrandom';
 
-function render() {
-    let rng = seedrandom();
-
-    var width = 400,
-        height = 600;
-
-    var circles = _.times(1000, () => {
-        let e = 50;
-        return {
-            //r: (Math.pow(2, e) / 10) + Math.pow(1 + rng(), e)
-            r: 0.5 + rng()
-        }
-    });
-
-    let start = performance.now();
-
-    // Lay out the circles on a rectangle
-    let layout = bubbleLayout({
-        aspectRatio: width / height,
-        rng: rng,
-        radius: circle => circle.r,
-        attempts: 2000,
-        initialFreeSpaceRatio: 1.3,
-        padding:  0.1
-    })(circles);
-
-    let elapsed = performance.now() - start;
-
-    console.log(util.format('space used: %s%%, fsr: %s, %sms', 
-        (layout.meta.circlesArea / (layout.width * layout.height)) * 100), 
-        layout.meta.freeSpaceRatio, elapsed);
-
-    // Transform the layout's normalised coordinate space to screen space.
-    // The x and y axis have the same scale.
-    let scale = d3.scale.linear()
-        .domain([0, layout.width])
-        .range([0, width]);
-
-    // Render the bubbles
-    var circle = d3.select(".chart")
-        .attr("width", width)
-        .attr("height", height)
-        .selectAll('circle')
-            .data(layout.circles)
-            .attr('cx', (c) => scale(c.x))
-            .attr('cy', (c) => scale(c.y))
-            .attr('r', (c) => scale(c.radius));
-    circle.enter().append("circle")
-        .attr('cx', (c) => scale(c.x))
-        .attr('cy', (c) => scale(c.y))
-        .attr('r', (c) => scale(c.radius))
-        .attr('class', 'bubble');
-    circle.exit().remove();
-}
 
 function circleArea(radius) {
     return Math.PI * radius * radius;
@@ -85,7 +31,7 @@ function getRectangle(aspectRatio, area) {
  * in a random location, starting with the largest circle and progressing in
  * order of size until the smallest is placed last.
  */
-function bubbleLayout(options) {
+export function bubbleLayout(options) {
     let layout = new BubbleLayout(options);
     return layout.layout.bind(layout);
 }
@@ -97,7 +43,7 @@ class BubbleLayout {
             // Default is square (1/1)
             aspectRatio: 1,
             // The initial area of the layout rectangle, specified as the
-            // ratio of (la - ba) / ba where la = layout area and 
+            // ratio of (la - ba) / ba where la = layout area and
             // ba = bubble area
             // i.e. 0 means the layout rectangle has the same area as the sum of
             // the areas of the bubbles to be layed out. 1 means the layout
@@ -121,7 +67,7 @@ class BubbleLayout {
             // Accessor function to get the radius of an input value
             radius: data => data.r,
 
-            // The collision detection strategy to use. 
+            // The collision detection strategy to use.
             // Default is simple O(n^2) (compare everything to everything)
             // strategy which may well be faster than building a quadtree for
             // small numbers of bubbles.
@@ -136,7 +82,7 @@ class BubbleLayout {
         if(options.initialFreeSpaceRatio < 0) {
             // Values < 0 mean the layout rect has less area than the circles to
             // lay out, which clearly makes no sense.
-            throw new Error(util.format('initialFreeSpaceRatio was < 0: %s', 
+            throw new Error(util.format('initialFreeSpaceRatio was < 0: %s',
                                         options.initialFreeSpaceRatio));
         }
 
@@ -313,4 +259,4 @@ class NaiveCollisionDetection {
 }
 
 // render();
-document.querySelector('button').addEventListener('click', () => render());
+// document.querySelector('button').addEventListener('click', () => render());
