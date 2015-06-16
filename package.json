@@ -2,10 +2,16 @@
   "devDependencies": {
     "babel-core": "^5",
     "babel-loader": "^5",
+    "css-loader": "^0.14.5",
+    "extract-text-webpack-plugin": "^0.8.2",
     "jade": "^1.11.0",
     "jade-loader": "^0.7.1",
+    "less": "^2.5.1",
+    "less-loader": "^2.2.0",
     "node-libs-browser": "^0",
-    "webpack": "^1"
+    "postcss-loader": "^0.4.4",
+    "style-loader": "^0.12.3",
+    "webpack": "^1.9.11"
   },
   "dependencies": {
     "d3": "^3",

@@ -1,9 +1,15 @@
 var path = require('path');
 
+var ExtractTextPlugin = require('extract-text-webpack-plugin');
+
+
 module.exports = {
     // configuration
     context: __dirname,
-    entry: './src/bootstrap',
+    entry: {
+        client: './src/bootstrap',
+        style: './style/similarity.less'
+    },
     devtool: 'source-map',
     stats: {
         colors: true,
@@ -33,7 +39,16 @@ module.exports = {
             {
                 test: /\.jade$/, exclude: /node_modules/,
                 loader: require.resolve('jade-loader')
-            }
+            },
+            {
+                test: /\.less$/,
+                loader: ExtractTextPlugin.extract(
+                    'style-loader',
+                    'css-loader?sourceMap!postcss-loader?sourceMap!less-loader?sourceMap')
+            },
         ]
-    }
+    },
+    plugins: [
+        new ExtractTextPlugin('similarity.css', {allChunks: true}),
+    ]
 };
