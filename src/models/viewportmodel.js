@@ -18,6 +18,11 @@ export default class ViewportModel {
     }
 
     setDimensions(width, height) {
+        if(this.dimensionsAvailable && this.width === width &&
+            this.height == height) {
+            return;
+        }
+
         this.dimensionsAvailable = true;
         this.width = width;
         this.height = height;

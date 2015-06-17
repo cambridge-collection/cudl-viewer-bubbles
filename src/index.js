@@ -39,6 +39,12 @@ export default function setupSimilarityTab(data, docId) {
     $('#similaritemstab').on('shown.bs.tab', e => {
         viewportModel.setDimensions(view.$el.width(), view.$el.height());
     });
+
+    $(window).on('resize', function() {
+        if(view.$el.is(':visible')) {
+            viewportModel.setDimensions(view.$el.width(), view.$el.height());
+        }
+    });
 }
 
 /*
