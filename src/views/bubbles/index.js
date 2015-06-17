@@ -1,3 +1,5 @@
+import util from 'util';
+
 import _ from 'lodash';
 import seedrandom from 'seedrandom';
 
@@ -92,8 +94,11 @@ export default class BubbleView extends View {
 
         // Render the bubbles
         var circle = d3.select(this.svgNode)
-            .attr("width", this.viewportModel.getWidth())
-            .attr("height", this.viewportModel.getHeight())
+            .attr('viewBox', util.format(
+                '0 0 %d %d', this.viewportModel.getWidth(),
+                this.viewportModel.getHeight()))
+            .attr("width", '100%')
+            .attr("height", '100%')
             .selectAll('circle')
                 .data(this.layout.circles)
                 .attr('cx', (c) => scale(c.x))
