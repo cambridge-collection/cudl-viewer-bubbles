@@ -1,3 +1,5 @@
+'use strict';
+
 import util from 'util';
 import assert from 'assert';
 
@@ -108,9 +110,7 @@ export default class BubbleView extends View {
 
         // Update the view area to match the sidebar resizing
         let svg = d3.select(this.svgNode)
-            .attr('viewBox', util.format(
-                '0 0 %d %d', this.viewportModel.getWidth(),
-                this.viewportModel.getHeight()))
+            .attr('viewBox', `0 0 ${this.viewportModel.getWidth()} ${this.viewportModel.getHeight()}`)
             .attr("width", '100%')
             .attr("height", '100%');
 
@@ -118,38 +118,80 @@ export default class BubbleView extends View {
     }
 
     renderBubbles(parent) {
-        let scale = this.scale;
-
         let bubble = parent.selectAll('g')
             .data(this.layout.circles);
 
         // ENTER
-        bubble.enter()
-            .append('g')
-                // Offset the bubble group to the center of the bubble
-                .attr('transform', (c) => `translate(${scale(c.x)}, ${scale(c.y)})`)
-                .attr('class', 'bubble')
-                .append('circle')
-                    // Our parent is offset, so we just need to position outself
-                    // our radius from the top/left of our
-                    .attr('cx', 0)
-                    .attr('cy', 0)
-                    .attr('r', (c) => scale(c.radius))
-                    .attr('class', 'bubble');
+        this.renderBubblesEnter(bubble);
 
         // UPDATE
-        bubble.transition()
-            .attr('transform', (c) => `translate(${scale(c.x)}, ${scale(c.y)})`);
-
-        bubble.select('circle').transition()
-            .attr('r', (c) => scale(c.radius));
+        this.renderBubblesUpdate(bubble);
 
         // EXIT
         bubble.exit().remove();
 
         return this;
     }
+
+    renderBubblesEnter(bubble) {
+        let scale = this.scale;
+
+        let enter = bubble.enter();
+        let g = enter.append('g')
+            // Offset the bubble group to the center of the bubble
+            .attr('transform', (c) => `translate(${scale(c.x)}, ${scale(c.y)})`)
+            .attr('class', 'bubble');
+
+        // Create clips required for our circles
+        let defs = g.append('defs');
+        defs.append('clipPath')
+            .attr('id', (c, i) => `bubble-stroke-${i}`)
+            .attr('class', 'bubble-stroke-clip')
+            .append('circle')
+                .attr('cx', 0)
+                .attr('cy', 0)
+                .attr('r', (c) => scale(c.radius));
+
+        g.append('circle')
+            // Our parent is offset, so we just need to position outself
+            // our radius from the top/left of our
+            .attr('cx', 0)
+            .attr('cy', 0)
+            .attr('r', (c) => {
+                return scale(c.radius) - this.STROKE_WIDTH / 2;
+            })
+            .attr('class', 'bubble-border');
+
+        g.append('circle')
+            .attr('class', 'dbg-circle')
+            // Our parent is offset, so we just need to position outself
+            // our radius from the top/left of our
+            .attr('cx', 0)
+            .attr('cy', 0)
+            .attr('r', (c) => scale(c.radius));
+    }
+
+    renderBubblesUpdate(bubble) {
+        let scale = this.scale;
+
+        bubble.transition()
+            .attr('transform', (c) => `translate(${scale(c.x)}, ${scale(c.y)})`);
+
+        // Update the radius of the stoke clip
+        bubble.select('defs .bubble-stroke-clip circle').transition()
+            .attr('r', (c) => scale(c.radius));
+
+        // Update the radius of the stroke/border
+        bubble.select('.bubble-border').transition()
+            .attr('r', (c) => scale(c.radius) - this.STROKE_WIDTH / 2);
+
+        // Update the debug circle
+        bubble.select('.dbg-circle')
+            .attr('r', (c) => scale(c.radius));
+    }
 };
 _.assign(BubbleView.prototype, {
-    className: 'bubble-view'
+    className: 'bubble-view',
+
+    STROKE_WIDTH: 10
 })
