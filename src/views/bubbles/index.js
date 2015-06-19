@@ -32,8 +32,14 @@ export default class BubbleView extends View {
         this.layout = null;
         this.svgNode = null;
 
-        $(this.viewportModel).on('change:dimensions',
-            _.throttle(this.createLayout.bind(this), 50));
+
+        let throttledLayout = _.throttle(this.createLayout.bind(this), 50);
+        $(this.viewportModel).on('change:dimensions', () => {
+            throttledLayout();
+            // Render immediatley to update the viewport coordinates
+            this.render();
+        });
+
         if(this.viewportModel.hasDimensions()) {
             this.createLayout();
         }
@@ -100,6 +106,7 @@ export default class BubbleView extends View {
             this.$el.append(this.svgNode);
         }
 
+        // Update the view area to match the sidebar resizing
         let svg = d3.select(this.svgNode)
             .attr('viewBox', util.format(
                 '0 0 %d %d', this.viewportModel.getWidth(),
@@ -107,31 +114,33 @@ export default class BubbleView extends View {
             .attr("width", '100%')
             .attr("height", '100%');
 
-        let bubblesGroup = svg.append('g');
-
-        this.renderBubbles(bubblesGroup);
+        this.renderBubbles(svg.select('.bubbles'));
     }
 
     renderBubbles(parent) {
         let scale = this.scale;
 
-        // Render the bubbles
-        var circle = parent
-            .selectAll('circle')
-                .data(this.layout.circles);
+        let bubble = parent.selectAll('g')
+            .data(this.layout.circles);
 
-        circle.enter().append("circle")
+        // ENTER
+        bubble.enter()
+            .append('g')
+                .attr('class', 'bubble')
+                .append('circle')
+                    .attr('cx', (c) => scale(c.x))
+                    .attr('cy', (c) => scale(c.y))
+                    .attr('r', (c) => scale(c.radius))
+                    .attr('class', 'bubble');
+
+        // UPDATE
+        bubble.select('circle').transition()
             .attr('cx', (c) => scale(c.x))
             .attr('cy', (c) => scale(c.y))
-            .attr('r', (c) => scale(c.radius))
-            .attr('class', 'bubble');
+            .attr('r', (c) => scale(c.radius));
 
-        circle.transition()
-                .attr('cx', (c) => scale(c.x))
-                .attr('cy', (c) => scale(c.y))
-                .attr('r', (c) => scale(c.radius));
-
-        circle.exit().remove();
+        // EXIT
+        bubble.exit().remove();
 
         return this;
     }
