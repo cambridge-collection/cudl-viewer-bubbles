@@ -126,17 +126,22 @@ export default class BubbleView extends View {
         // ENTER
         bubble.enter()
             .append('g')
+                // Offset the bubble group to the center of the bubble
+                .attr('transform', (c) => `translate(${scale(c.x)}, ${scale(c.y)})`)
                 .attr('class', 'bubble')
                 .append('circle')
-                    .attr('cx', (c) => scale(c.x))
-                    .attr('cy', (c) => scale(c.y))
+                    // Our parent is offset, so we just need to position outself
+                    // our radius from the top/left of our
+                    .attr('cx', 0)
+                    .attr('cy', 0)
                     .attr('r', (c) => scale(c.radius))
                     .attr('class', 'bubble');
 
         // UPDATE
+        bubble.transition()
+            .attr('transform', (c) => `translate(${scale(c.x)}, ${scale(c.y)})`);
+
         bubble.select('circle').transition()
-            .attr('cx', (c) => scale(c.x))
-            .attr('cy', (c) => scale(c.y))
             .attr('r', (c) => scale(c.radius));
 
         // EXIT
