@@ -2,6 +2,7 @@
 
 import util from 'util';
 import assert from 'assert';
+import url from 'url';
 
 import _ from 'lodash';
 import seedrandom from 'seedrandom';
@@ -31,6 +32,7 @@ export default class BubbleView extends View {
         this.similarity = options.similarity;
         this.similarityIdentifier = options.similarityIdentifier;
         this.viewportModel = options.viewportModel;
+        this.imageServerBaseUrl = options.imageServerBaseUrl || '';
         this.layout = null;
         this.svgNode = null;
 
@@ -150,7 +152,7 @@ export default class BubbleView extends View {
             .append('circle')
                 .attr('cx', 0)
                 .attr('cy', 0)
-                .attr('r', (c) => scale(c.radius));
+                .attr('r', this._bubbleClipRadius.bind(this));
 
         // Placeholder ? text to show something before the image is loaded
         // <text class="placeholder" x="50" y="50" font-size="100">?</text>
@@ -210,9 +212,16 @@ export default class BubbleView extends View {
         bubble.select('text.placeholder').transition()
             .attr('font-size', this._placeholderFontSize.bind(this));
 
+        // Update bounds of preview thumbnail
+        bubble.select('image.thumbnail')
+            .attr('x', this._previewImageThumbnailXY.bind(this))
+            .attr('y', this._previewImageThumbnailXY.bind(this))
+            .attr('width', this._previewImageThumbnailSize.bind(this))
+            .attr('height', this._previewImageThumbnailSize.bind(this));
+
         // Update the radius of the stoke clip
         bubble.select('defs .bubble-stroke-clip circle').transition()
-            .attr('r', (c) => scale(c.radius));
+            .attr('r', this._bubbleClipRadius.bind(this));
 
         // Update the radius of the stroke/border
         bubble.select('.border-shadow-pad-hack')
@@ -240,6 +249,10 @@ export default class BubbleView extends View {
         return `bubble-clip-${i}`;
     }
 
+    _bubbleClipRadius(c) {
+        return this.scale(c.radius) - this.STROKE_WIDTH - this.PREVIEW_IMAGE_OVERLAP;
+    }
+
     _placeholderFontSize(c) {
         return (this.scale(c.radius) * 2 - this.STROKE_WIDTH) / 2;
     }
@@ -253,8 +266,12 @@ export default class BubbleView extends View {
     }
 
     _previewImageThumbnailUrl(c) {
-        // FIXME: use real URL from circle data
-        return 'http://found-dom02.lib.cam.ac.uk//content/images/PR-FH-00910-00083-00098-000-00001_files/8/0_0.jpg';
+        let imageUrl = c.data.firstPage.thumbnailImageURL;
+        if(!imageUrl) {
+            console.warn('Similarity hit has no image', c);
+            return null;
+        }
+        return url.resolve(this.imageServerBaseUrl, imageUrl);
     }
 
     _previewImageThumbnailSize(c) {
@@ -269,6 +286,9 @@ _.assign(BubbleView.prototype, {
     className: 'bubble-view',
 
     STROKE_WIDTH: 10,
+    // The amount the preview image overlaps with the stroke to avoid gaps at
+    // the border with the stroke
+    PREVIEW_IMAGE_OVERLAP: 0,
     BORDER_SHADOW_PADDING: 5,
     // Amount to scale the preview thumbnail by, relative to the size of the
     // bubble. Used to avoid rendering the border around the item in the image.

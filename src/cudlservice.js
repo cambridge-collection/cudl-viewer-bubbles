@@ -24,10 +24,22 @@ export default class CudlService {
         this.cudlServicesBaseUrl = cudlServicesBaseUrl;
     }
 
-    getSimilarityUrl(itemId, similarityId) {
-        let path = _(['similarity', itemId, similarityId])
+    getSimilarityUrl(options) {
+        let path = _(['similarity', options.itemId, options.similarityId])
                 .map(encodeURIComponent).join('/');
-        return url.resolve(this.cudlServicesBaseUrl, path);
+
+        let query = {};
+        if(options.embedMeta) {
+            if(!_.contains(['partial', 'full'], options.embedMeta)) {
+                throw new ValueError('Invalid value for options.embedMeta: ' +
+                                     `${options.embedMeta}`);
+            }
+            query.embedMeta = options.embedMeta;
+        }
+        let assembledQuery = url.format({query: query});
+
+        return url.resolve(url.resolve(this.cudlServicesBaseUrl, path),
+                           assembledQuery);
     }
 
     /**
@@ -38,8 +50,15 @@ export default class CudlService {
      * @param dmdId The id of the descriptive metadata section in the item
      * @return A promise of the similarity response.
      */
-    getSimilarItems(itemId, similarityId) {
-        let url = this.getSimilarityUrl(itemId, similarityId);
+    getSimilarItems(options) {
+        if(!_.isObject(options))
+            throw new ValueError(`options was not an object: ${options}`);
+        if(!options.itemId)
+            throw new ValueError(`options.itemId is required`);
+        if(!options.similarityId)
+            throw new ValueError(`options.similarityId is required`);
+
+        let url = this.getSimilarityUrl(options);
 
         let jqxhr = $.ajax({
             url: url,

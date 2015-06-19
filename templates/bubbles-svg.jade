@@ -15,6 +15,6 @@ svg(version="1.1", xmlns="http://www.w3.org/2000/svg",
                 feMergeNode
                 feMergeNode(in="SourceGraphic")
 
-        filter(id="placeholderImgBlur")
-            feGaussianBlur(in="SourceImage", stdDeviation="3")
+        filter(id="previewThumbnailBlur")
+            feGaussianBlur(in="SourceImage", stdDeviation="5")
     g.bubbles

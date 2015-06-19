@@ -32,7 +32,8 @@ export default function setupSimilarityTab(data, docId) {
         el: $('#similaritems .similarity-container')[0],
         similarityModel: similarityModel,
         loadingModel: loadingModel,
-        viewportModel: viewportModel
+        viewportModel: viewportModel,
+        imageServerBaseUrl: cudl.imageServer
     }).render();
 
     // Watch for our tab being shown/hidden

@@ -14,6 +14,7 @@ export class RootSimilarityView extends View {
         this.model = options.similarityModel;
         this.loadingModel = options.loadingModel;
         this.viewportModel = options.viewportModel;
+        this.imageServerBaseUrl = options.imageServerBaseUrl;
 
         $(this.model).on('change:state', this.render.bind(this));
 
@@ -51,7 +52,8 @@ export class RootSimilarityView extends View {
             view = new BubbleView({
                 similarity: this.model.similarity,
                 similarityIdentifier: this.model.similarityIdentifier,
-                viewportModel: this.viewportModel
+                viewportModel: this.viewportModel,
+                imageServerBaseUrl: this.imageServerBaseUrl
             })
         }
         else if(state === 'loading') {

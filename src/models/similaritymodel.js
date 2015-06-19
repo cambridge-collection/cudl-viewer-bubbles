@@ -87,7 +87,11 @@ export default class SimilarityModel {
         this.fsm.startLoading();
 
         let {similarity: similarityPromise, abort} = this.cudlService
-            .getSimilarItems(this.itemMetadata.getItemId(), simId);
+            .getSimilarItems({
+                itemId: this.itemMetadata.getItemId(),
+                similarityId: simId,
+                embedMeta: 'partial'
+            });
         let loadingToken = this.loadingModel.startLoading();
 
         this.similarityIdentifier = simId;
