@@ -59,6 +59,10 @@
  *      the dimensions of the full resolution (level 13) image.
  */
 
+ import assert from 'assert';
+
+ import { ValueError } from '../../util/exceptions';
+
 export class ApproximatedTiledImage {
     constructor(options) {
         options = _.assign({}, options, {
@@ -99,32 +103,43 @@ export class ApproximatedTiledImage {
      */
     sample(source, scale) {
         let target = source.scale(scale).roundOut();
-        let targetLvl = minLevel(Math.max(this.width(), this.height()) * scale);
 
-        let rows = _.range(Math.floor(target.left / this.tileSize),
-                           Math.floor(target.right / this.tileSize) + 1);
-        let cols = _.range(Math.floor(target.top / this.tileSize),
-                           Math.floor(target.bottom / this.tileSize) + 1);
+        // Calculate the exact level required to represent the image at the
+        // scale. This will be fractional, e.g. 8.6 rather than an integer
+        let exactLvl = log2(Math.max(this.width(), this.height()) * scale);
 
-        let tiles = [];
-        for(let row of rows) {
-            for(let col of cols) {
-                tiles.push(new Tile(row, col, targetLvl));
-            }
-        }
-        return tiles;
+        // Choose the nearest resolution level >= the desired level so that we
+        // can always downscale the tiles, rather than upscale which would
+        // obviously loose quality.
+        let bestLvl = Math.ceil(exactLvl);
+
+        // If the exact scale does not match one of the fixed integer levels we
+        // have image samples at we'll need to do additional scaling after we
+        // have the tiles at the next-larger level. This is the amount we'll
+        // need to scale down the tiles by when rendering to match the requested
+        // scale.
+        let remainingScale = exactLvl / bestLvl;
+        assert(remainingScale > 0 && remainingScale <= 1);
+
+        let startCol = Math.floor(target.left / this.tileSize);
+        let colCount = Math.floor(target.right / this.tileSize) + 1 - startCol;
+
+        let startRow = Math.floor(target.left / this.tileSize);
+        let rowCount = Math.floor(target.bottom / this.tileSize) + 1 - startRow;
+
+
+        return new Sample(
+            // Area of interest inside the total area covered by this sample's
+            // tiles.
+            new Rect(
+                target.x % this.tileSize, target.y % this.tileSize,
+                target.width, target.height),
+            bestLvl,
+            remainingScale,
+            this.tileSize,
+            new Rect(startCol, startRow, colCount, rowCount)
+        );
     }
-}
-
-/**
- * Get the minimum resolution level that is required to represent the dimensions
- * of x. x is either a Rect or number.
- */
-function minLevel(x) {
-    if(x instanceof Rect)
-        x = Math.max(x.width, x.height);
-
-    return Math.ceil(log2(x));
 }
 
 /**
@@ -136,9 +151,9 @@ function log2(x) {
 
 
 export class Tile {
-    constructor(row, col, level) {
-        this.row = row;
+    constructor(col, row, level) {
         this.col = col;
+        this.row = row;
         this.level = level;
     }
 }
@@ -175,4 +190,35 @@ export class Rect {
     get bottom() { return this.y + this.h; }
     get left() { return this.x; }
     get right() { return this.x + this.w; }
+}
+
+
+class Sample {
+    constructor(region, level, scale, tileSize, tiles) {
+        if(!(region instanceof Rect))
+            throw new ValueError(`region was not a Rect: ${region}`);
+        if(!(tiles instanceof Rect))
+            throw new ValueError(`tiles was not a Rect: ${tiles}`);
+        if(level % 1 !== 0)
+            throw new ValueError(`level was not an integer: ${level}`);
+        if(!_.isNumber(scale))
+            throw new ValueError(`scale was not a number: ${scale}`);
+
+        this.region = region,
+        this.level = level;
+        this.scale = scale;
+        this.tileSize = tileSize,
+        this.tiles = tiles;
+    }
+
+    tiles() {
+        let tiles = [];
+        for(let col = this.tiles.left; col < this.tiles.right; col++) {
+            for(let row = this.tiles.top; row < this.tiles.bottom; row++) {
+                tiles.push(new Tile(col, row, this.level));
+            }
+        }
+
+        return tiles;
+    }
 }
