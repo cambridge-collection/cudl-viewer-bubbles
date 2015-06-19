@@ -1,0 +1,19 @@
+doctype xml
+svg(version="1.1", xmlns="http://www.w3.org/2000/svg",
+    xmlns:xlink="http://www.w3.org/1999/xlink", class="bubbles")
+    defs
+        clipPath(id="unitCircleClip")
+            circle(cx="0.5", cy="0.5", r="0.5")
+
+        filter(id="bubbleBorderShadow", x="-10%", y="-10%", width="120%",
+               height="120%")
+            feGaussianBlur(in="SourceAlpha", stdDeviation="1.5")
+            feComponentTransfer(in="blur")
+                feFuncA(type="linear", slope="0.35")
+            feOffset(dx="0", dy="3")
+            feMerge
+                feMergeNode
+                feMergeNode(in="SourceGraphic")
+
+        filter(id="placeholderImgBlur")
+            feGaussianBlur(in="SourceImage", stdDeviation="3")

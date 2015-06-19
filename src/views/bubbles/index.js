@@ -1,10 +1,12 @@
 import util from 'util';
+import assert from 'assert';
 
 import _ from 'lodash';
 import seedrandom from 'seedrandom';
 
 import View from '../view';
 import { bubbleLayout } from './bubblelayout';
+import template from '../../../templates/bubbles-svg.jade';
 
 
 export default class BubbleView extends View {
@@ -81,12 +83,20 @@ export default class BubbleView extends View {
         return this.layout;
     }
 
+    getBaseSvg() {
+        let doc = $.parseXML(template());
+        let svg = doc.getElementsByTagNameNS(
+            'http://www.w3.org/2000/svg', 'svg')[0];
+        assert(svg);
+        return svg;
+    }
+
     render() {
         if(this.layout === null)
             return;
 
         if(this.svgNode === null) {
-            this.svgNode = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            this.svgNode = this.getBaseSvg();
             this.$el.append(this.svgNode);
         }
 
