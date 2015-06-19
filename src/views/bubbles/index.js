@@ -118,7 +118,7 @@ export default class BubbleView extends View {
     }
 
     renderBubbles(parent) {
-        let bubble = parent.selectAll('g')
+        let bubble = parent.selectAll('g.bubble')
             .data(this.layout.circles);
 
         // ENTER
@@ -145,22 +145,52 @@ export default class BubbleView extends View {
         // Create clips required for our circles
         let defs = g.append('defs');
         defs.append('clipPath')
-            .attr('id', (c, i) => `bubble-stroke-${i}`)
+            .attr('id', this._bubbleClipId.bind(this))
             .attr('class', 'bubble-stroke-clip')
             .append('circle')
                 .attr('cx', 0)
                 .attr('cy', 0)
                 .attr('r', (c) => scale(c.radius));
 
-        g.append('circle')
-            // Our parent is offset, so we just need to position outself
-            // our radius from the top/left of our
-            .attr('cx', 0)
-            .attr('cy', 0)
-            .attr('r', (c) => {
-                return scale(c.radius) - this.STROKE_WIDTH / 2;
-            })
+        // Placeholder ? text to show something before the image is loaded
+        // <text class="placeholder" x="50" y="50" font-size="100">?</text>
+        g.append('text')
+            .attr('class', 'placeholder')
+            .attr('x', 0)
+            .attr('y', 0)
+            .attr('font-size', this._placeholderFontSize.bind(this))
+            .text('?');
+
+        // Create group to hold the image. Initially it contains the thumbnail
+        // preview until the the thumbnail loads, allowing the main image to be
+        // fetched.
+        let imageG = g.append('g')
+            .attr('class', 'preview-image');
+        imageG.append('image')
+            .attr('class', 'thumbnail')
+            .attr('preserveAspectRatio', 'xMidYMid slice')
+            .attr('xlink:href', this._previewImageThumbnailUrl.bind(this))
+            .attr('x', this._previewImageThumbnailXY.bind(this))
+            .attr('y', this._previewImageThumbnailXY.bind(this))
+            .attr('width', this._previewImageThumbnailSize.bind(this))
+            .attr('height', this._previewImageThumbnailSize.bind(this))
+            .attr('clip-path', (c, i) => `url(#${this._bubbleClipId(c, i)})`);
+
+        // The group for the white border
+        let borderG = g.append('g')
             .attr('class', 'bubble-border');
+        borderG.append('rect')
+                .attr('class', 'border-shadow-pad-hack')
+                .attr('x', this._borderShadowPadHackXY.bind(this))
+                .attr('y', this._borderShadowPadHackXY.bind(this))
+                .attr('width', this._borderShadowPadHackSize.bind(this))
+                .attr('height', this._borderShadowPadHackSize.bind(this))
+        borderG.append('circle')
+                // Our parent is offset, so we just need to position outself
+                // our radius from the top/left of our
+                .attr('cx', 0)
+                .attr('cy', 0)
+                .attr('r', this._borderCircleRadius.bind(this));
 
         g.append('circle')
             .attr('class', 'dbg-circle')
@@ -177,21 +207,70 @@ export default class BubbleView extends View {
         bubble.transition()
             .attr('transform', (c) => `translate(${scale(c.x)}, ${scale(c.y)})`);
 
+        bubble.select('text.placeholder').transition()
+            .attr('font-size', this._placeholderFontSize.bind(this));
+
         // Update the radius of the stoke clip
         bubble.select('defs .bubble-stroke-clip circle').transition()
             .attr('r', (c) => scale(c.radius));
 
         // Update the radius of the stroke/border
-        bubble.select('.bubble-border').transition()
-            .attr('r', (c) => scale(c.radius) - this.STROKE_WIDTH / 2);
+        bubble.select('.border-shadow-pad-hack')
+            .attr('x', this._borderShadowPadHackXY.bind(this))
+            .attr('y', this._borderShadowPadHackXY.bind(this))
+            .attr('width', this._borderShadowPadHackSize.bind(this))
+            .attr('height', this._borderShadowPadHackSize.bind(this));
+
+        bubble.select('.bubble-border circle').transition()
+            .attr('r', this._borderCircleRadius.bind(this));
 
         // Update the debug circle
         bubble.select('.dbg-circle')
             .attr('r', (c) => scale(c.radius));
     }
+
+    _borderCircleRadius(c) {
+        // SVG strokes are half inside, half outside the shape, so we need to
+        // shrink the circle radius by half the stroke width to avoid
+        // overflowing our defined circle area.
+        return this.scale(c.radius) - this.STROKE_WIDTH / 2
+    }
+
+    _bubbleClipId(c, i) {
+        return `bubble-clip-${i}`;
+    }
+
+    _placeholderFontSize(c) {
+        return (this.scale(c.radius) * 2 - this.STROKE_WIDTH) / 2;
+    }
+
+    _borderShadowPadHackSize(c) {
+        return this.scale(c.radius) * 2 + this.BORDER_SHADOW_PADDING * 2;
+    }
+
+    _borderShadowPadHackXY(c) {
+        return 0 - this._borderShadowPadHackSize(c) / 2;
+    }
+
+    _previewImageThumbnailUrl(c) {
+        // FIXME: use real URL from circle data
+        return 'http://found-dom02.lib.cam.ac.uk//content/images/PR-FH-00910-00083-00098-000-00001_files/8/0_0.jpg';
+    }
+
+    _previewImageThumbnailSize(c) {
+        return this.scale(c.radius) * 2 * this.PREVIEW_THUMB_SCALE;
+    }
+
+    _previewImageThumbnailXY(c) {
+        return 0 - this._previewImageThumbnailSize(c) / 2;
+    }
 };
 _.assign(BubbleView.prototype, {
     className: 'bubble-view',
 
-    STROKE_WIDTH: 10
+    STROKE_WIDTH: 10,
+    BORDER_SHADOW_PADDING: 5,
+    // Amount to scale the preview thumbnail by, relative to the size of the
+    // bubble. Used to avoid rendering the border around the item in the image.
+    PREVIEW_THUMB_SCALE: 1.3
 })
