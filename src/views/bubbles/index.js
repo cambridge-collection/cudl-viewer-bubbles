@@ -107,7 +107,9 @@ export default class BubbleView extends View {
             .attr("width", '100%')
             .attr("height", '100%');
 
-        this.renderBubbles(svg);
+        let bubblesGroup = svg.append('g');
+
+        this.renderBubbles(bubblesGroup);
     }
 
     renderBubbles(parent) {
