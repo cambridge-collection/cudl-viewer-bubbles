@@ -100,15 +100,21 @@ export default class BubbleView extends View {
             this.$el.append(this.svgNode);
         }
 
-        let scale = this.scale;
-
-        // Render the bubbles
-        var circle = d3.select(this.svgNode)
+        let svg = d3.select(this.svgNode)
             .attr('viewBox', util.format(
                 '0 0 %d %d', this.viewportModel.getWidth(),
                 this.viewportModel.getHeight()))
             .attr("width", '100%')
-            .attr("height", '100%')
+            .attr("height", '100%');
+
+        this.renderBubbles(svg);
+    }
+
+    renderBubbles(parent) {
+        let scale = this.scale;
+
+        // Render the bubbles
+        var circle = parent
             .selectAll('circle')
                 .data(this.layout.circles);
 
