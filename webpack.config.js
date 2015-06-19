@@ -7,8 +7,7 @@ module.exports = {
     // configuration
     context: __dirname,
     entry: {
-        client: './src/bootstrap',
-        style: './style/similarity.less'
+        client: './src/bootstrap'
     },
     devtool: 'source-map',
     stats: {
@@ -49,6 +48,6 @@ module.exports = {
         ]
     },
     plugins: [
-        new ExtractTextPlugin('similarity.css', {allChunks: true}),
+        new ExtractTextPlugin('similarity.css', {allChunks: true})
     ]
 };
