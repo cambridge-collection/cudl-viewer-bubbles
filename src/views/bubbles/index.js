@@ -31,7 +31,7 @@ export default class BubbleView extends View {
         this.svgNode = null;
 
         $(this.viewportModel).on('change:dimensions',
-                                 this.createLayout.bind(this));
+            _.throttle(this.createLayout.bind(this), 50));
         if(this.viewportModel.hasDimensions()) {
             this.createLayout();
         }
@@ -100,15 +100,19 @@ export default class BubbleView extends View {
             .attr("width", '100%')
             .attr("height", '100%')
             .selectAll('circle')
-                .data(this.layout.circles)
-                .attr('cx', (c) => scale(c.x))
-                .attr('cy', (c) => scale(c.y))
-                .attr('r', (c) => scale(c.radius));
+                .data(this.layout.circles);
+
         circle.enter().append("circle")
             .attr('cx', (c) => scale(c.x))
             .attr('cy', (c) => scale(c.y))
             .attr('r', (c) => scale(c.radius))
             .attr('class', 'bubble');
+
+        circle.transition()
+                .attr('cx', (c) => scale(c.x))
+                .attr('cy', (c) => scale(c.y))
+                .attr('r', (c) => scale(c.radius));
+
         circle.exit().remove();
 
         return this;
