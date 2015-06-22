@@ -16,7 +16,7 @@ function circleArea(radius) {
  *
  * i.e. width/height = aspectRatio, width*height = area
  */
-function getRectangle(aspectRatio, area) {
+export function getRectangle(aspectRatio, area) {
     let w = aspectRatio;
     let h = 1;
     // w * h = 1 (area = 1)
