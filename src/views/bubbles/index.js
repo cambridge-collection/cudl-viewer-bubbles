@@ -123,11 +123,11 @@ export default class BubbleView extends View {
         let bubble = parent.selectAll('g.bubble')
             .data(this.layout.circles);
 
-        // ENTER
-        this.renderBubblesEnter(bubble);
-
         // UPDATE
         this.renderBubblesUpdate(bubble);
+
+        // ENTER
+        this.renderBubblesEnter(bubble);
 
         // EXIT
         bubble.exit().remove();
@@ -139,7 +139,10 @@ export default class BubbleView extends View {
         let scale = this.scale;
 
         let enter = bubble.enter();
-        let g = enter.append('g')
+        let a = enter.append('a')
+            .attr('xlink:href', this._bubbleUrl.bind(this))
+            .attr('target', '_parent')
+        let g = a.append('g')
             // Offset the bubble group to the center of the bubble
             .attr('transform', (c) => `translate(${scale(c.x)}, ${scale(c.y)})`)
             .attr('class', 'bubble');
@@ -280,6 +283,13 @@ export default class BubbleView extends View {
 
     _previewImageThumbnailXY(c) {
         return 0 - this._previewImageThumbnailSize(c) / 2;
+    }
+
+    _bubbleUrl(c) {
+        return [
+            '', 'view', encodeURIComponent(c.data.ID),
+            encodeURIComponent(c.data.firstPage.sequence)
+        ].join('/');
     }
 };
 _.assign(BubbleView.prototype, {
