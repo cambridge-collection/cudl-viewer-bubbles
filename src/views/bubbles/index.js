@@ -10,7 +10,15 @@ import seedrandom from 'seedrandom';
 import View from '../view';
 import { bubbleLayout } from './bubblelayout';
 import template from '../../../templates/bubbles-svg.jade';
+import { ApproximatedTiledImage } from './tiledimage';
+import { randomSubregion } from './subregion';
 
+
+const XLINK_NS = 'http://www.w3.org/1999/xlink',
+      // The level in the .dzi tile tree that consistently fits our entire image
+      THUMBNAIL_LVL = 8,
+      // The highest resolution level available in the dzi tile tree
+      MAX_LVL = 12;
 
 export default class BubbleView extends View {
     constructor(options) {
@@ -35,6 +43,7 @@ export default class BubbleView extends View {
         this.imageServerBaseUrl = options.imageServerBaseUrl || '';
         this.layout = null;
         this.svgNode = null;
+        this.renderRequested = false;
 
 
         let throttledLayout = _.throttle(this.createLayout.bind(this), 50);
@@ -46,6 +55,13 @@ export default class BubbleView extends View {
 
         if(this.viewportModel.hasDimensions()) {
             this.createLayout();
+        }
+    }
+
+    requestRender() {
+        if(this.renderRequested === false) {
+            this.renderRequested = setTimeout(
+                this.render.bind(this), 0);
         }
     }
 
@@ -102,6 +118,9 @@ export default class BubbleView extends View {
     }
 
     render() {
+        // Allow another render to be requested
+        this.renderRequested = false;
+
         if(this.layout === null)
             return;
 
@@ -116,7 +135,8 @@ export default class BubbleView extends View {
             .attr("width", '100%')
             .attr("height", '100%');
 
-        this.renderBubbles(svg.select('.bubbles'));
+        let bubbles = svg.select('.bubbles');
+        this.renderBubbles(bubbles);
     }
 
     renderBubbles(parent) {
@@ -132,11 +152,15 @@ export default class BubbleView extends View {
         // EXIT
         bubble.exit().remove();
 
+        // Nested data join to render each tile
+        this.renderTiledPreviews(bubble);
+
         return this;
     }
 
     renderBubblesEnter(bubble) {
         let scale = this.scale;
+        let self = this;
 
         let enter = bubble.enter();
         let a = enter.append('a')
@@ -170,16 +194,24 @@ export default class BubbleView extends View {
         // preview until the the thumbnail loads, allowing the main image to be
         // fetched.
         let imageG = g.append('g')
-            .attr('class', 'preview-image');
+            .attr('class', 'preview-image')
+            .attr('clip-path', (c, i) => `url(#${this._bubbleClipId(c, i)})`);
         imageG.append('image')
             .attr('class', 'thumbnail')
             .attr('preserveAspectRatio', 'xMidYMid slice')
+            // re-render when the image loads. This will pick up the image
+            // dimentions and insert the full res tiles.
+            .on('load', function(c, i) {
+                console.log('image load', this, c, i);
+                let elem = this;
+                self._createTiledImageSampler(elem, c);
+                self.requestRender();
+            })
             .attr('xlink:href', this._previewImageThumbnailUrl.bind(this))
             .attr('x', this._previewImageThumbnailXY.bind(this))
             .attr('y', this._previewImageThumbnailXY.bind(this))
             .attr('width', this._previewImageThumbnailSize.bind(this))
-            .attr('height', this._previewImageThumbnailSize.bind(this))
-            .attr('clip-path', (c, i) => `url(#${this._bubbleClipId(c, i)})`);
+            .attr('height', this._previewImageThumbnailSize.bind(this));
 
         // The group for the white border
         let borderG = g.append('g')
@@ -291,6 +323,123 @@ export default class BubbleView extends View {
             encodeURIComponent(c.data.firstPage.sequence)
         ].join('/');
     }
+
+    _createTiledImageSampler(thumbnailImageEl, c) {
+        let [thumbW, thumbH] = getSvgImageDimentions(thumbnailImageEl);
+        c.data.tiledImage = new ApproximatedTiledImage(
+            {w: thumbW, h: thumbH, lvl: THUMBNAIL_LVL, maxLevel: this.MAX_LVL});
+    }
+
+    renderTiledPreviews(bubble) {
+        let tileGroup = bubble.select('g.preview-image').selectAll('g.tiles')
+            .data((circle, i) => {
+                // tiledImage is only created when the preview image is loaded.
+                // Until then we can't render any tiles because we don't know
+                // what they are yet.
+                if(!circle.data.tiledImage)
+                    return [];
+
+                let sample = this._getFullResPreviewTileSample(circle, i);
+
+                return [{circle: circle,
+                         sample: sample}];
+            });
+
+        // Create the (initially empty) group to hold the full-res image tiles
+        tileGroup.enter()
+            .append('g')
+                .attr('class', 'tiles')
+                .attr('transform', ({sample, circle}) => {
+                    let scale = this.scale;
+                    return [
+                        // Scale first as region offsets are in scaled units.
+                        // Also scaling happens around (0, 0) so scaling has to
+                        // be done before offsetting into position under the
+                        // bubble.
+                        `scale(${sample.scale})`,
+                        // Offset the tiled area to place our sampled region at
+                        // (0,0)
+                        `translate(${-sample.region.x}, ${-sample.region.y})`,
+
+                        // The bubbles (0,0) is at the center, so need to offset
+                        // by the radius to place the image at the top-left
+                        `translate(${scale(-circle.radius)} ${scale(-circle.radius)})`
+                    ].join(' ');
+                });
+        tileGroup.exit().remove();
+
+        // Create subselection to allow a nested data join under each bubble
+        let tile = tileGroup.selectAll('image')
+            .data(({sample, circle}) => {
+                return _.map(sample.tilesList(),
+                             tile => ({tile: tile, sample: sample,
+                                       circle: circle}));
+            });
+
+        tile.enter()
+            .append('image')
+                .attr('class', ({tile, sample}) => {
+                    console.log('rendering tile: ', tile, sample);
+                    return 'tile';
+                })
+                .on('load', function() {
+                    let imageEl = this;
+                    let [w, h] = getSvgImageDimentions(imageEl);
+                    imageEl.setAttribute('width', w);
+                    imageEl.setAttribute('height', h);
+                })
+                .attr('xlink:href', this._getTileUrl.bind(this))
+                .attr('width', this._getTileImageDimention.bind(this))
+                .attr('height', this._getTileImageDimention.bind(this))
+                .attr('x', ({tile, sample}) => (tile.col - sample.tiles.left) * sample.tileSize)
+                .attr('y', ({tile, sample}) => (tile.row - sample.tiles.top) * sample.tileSize)
+    }
+
+    _getTileUrl({tile, circle}) {
+        let thumbnailUrl = this._previewImageThumbnailUrl(circle);
+        return thumbnailUrl.replace(
+            /\/\d+\/\d+_\d+\.([a-z]+)$/,
+            `/${tile.level}/${tile.col}_${tile.row}.$1`);
+    }
+
+    _getTileImageDimention({sample}) {
+        return sample.tileSize + this.TILE_OVERLAP;
+    }
+
+    /**
+     * Assign a randomly chosen region of the full-res image for the bubble.
+     */
+     // TODO: Move scale dependant part of these calculations into the d3 update
+     // call.
+    _getFullResPreviewTileSample(c, i) {
+        let tiledImage = c.data.tiledImage;
+
+        // The minimum possible dimensions of the image at the highest
+        // resolution level, given the size of the thubnail.
+        let minimumWidthFull = tiledImage.width(MAX_LVL, true);
+        let minimumHeightFull = tiledImage.height(MAX_LVL, true);
+
+        let destWH = this.scale(c.radius * 2);
+
+        // Using a consistent seed for each bubble ensures the same subregion
+        // is selected each time.
+        let rng = seedrandom(`${c.data.ID}/${c.data.firstPage.sequence}/${i}`);
+
+        // Randomly choose a subregion of the highest res to show in the bubble
+        let subregion = randomSubregion(minimumWidthFull, minimumHeightFull,
+                                        destWH, destWH, rng);
+
+        // destWH is the smallest the subregion will be, it may be larger, up to
+        // the entire available image area.
+        let scale = destWH / subregion.width;
+        assert(scale <= 1);
+
+        // Give me the tiles required to render the specified sub rectangle of
+        // the image at the given scale (zoom) level.
+        // i.e. if the region is 1000px wide and scale is 0.1 then we'd get the
+        // tiles to render a 100px wide area (no the 1000px area).
+        return tiledImage.sample(subregion, scale);
+    }
 };
 _.assign(BubbleView.prototype, {
     className: 'bubble-view',
@@ -302,5 +451,24 @@ _.assign(BubbleView.prototype, {
     BORDER_SHADOW_PADDING: 5,
     // Amount to scale the preview thumbnail by, relative to the size of the
     // bubble. Used to avoid rendering the border around the item in the image.
-    PREVIEW_THUMB_SCALE: 1.3
+    PREVIEW_THUMB_SCALE: 1.3,
+    // The amount tiles overlap by on their right and bottom edges
+    TILE_OVERLAP: 1
 })
+
+function getSvgImageDimentions(imageEl) {
+    // The imageEl must have dispatched a "load" event before this is called
+    let imageUrl = imageEl.getAttributeNS(XLINK_NS, 'href');
+
+    // SVG's image el doesn't provide an API for accessing the dimensions of the
+    // loaded image. The HTML img element does though, and because the SVG image
+    // has already loaded the URL, the browser shouldn't request it again if we
+    // create an image el with the same URL, allowing us to access the
+    // dimensions.
+    let htmlImg = new Image();
+    htmlImg.src = imageUrl;
+    assert(htmlImg.width);
+    assert(htmlImg.height);
+
+    return [htmlImg.width, htmlImg.height];
+}

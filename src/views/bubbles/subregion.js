@@ -1,3 +1,5 @@
+import assert from 'assert';
+
 import { Rect } from './tiledimage';
 import { ValueError } from '../../util/exceptions';
 import { getRectangle } from './bubblelayout';
@@ -24,7 +26,8 @@ export function randomSubregion(srcWidth, srcHeight, destWidth, destHeight, rng)
     let aspectRatio = destWidth / destHeight;
 
     let minArea = destWidth * destHeight;
-    let maxArea = area(maxRect(src.width, src.height, aspectRatio));
+    let maxArea = area(maxRect(aspectRatio, src.width, src.height));
+    assert(minArea < maxArea)
     let randomArea = lerp(minArea, maxArea, rng());
 
     let [w, h] = getRectangle(aspectRatio, randomArea);

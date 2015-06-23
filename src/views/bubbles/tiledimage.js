@@ -211,7 +211,7 @@ class Sample {
         this.tiles = tiles;
     }
 
-    tiles() {
+    tilesList() {
         let tiles = [];
         for(let col = this.tiles.left; col < this.tiles.right; col++) {
             for(let row = this.tiles.top; row < this.tiles.bottom; row++) {
