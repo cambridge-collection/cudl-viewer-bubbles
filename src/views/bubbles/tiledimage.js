@@ -124,7 +124,7 @@ export class ApproximatedTiledImage {
         let startCol = Math.floor(target.left / this.tileSize);
         let colCount = Math.floor(target.right / this.tileSize) + 1 - startCol;
 
-        let startRow = Math.floor(target.left / this.tileSize);
+        let startRow = Math.floor(target.top / this.tileSize);
         let rowCount = Math.floor(target.bottom / this.tileSize) + 1 - startRow;
 
 
