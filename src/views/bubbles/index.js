@@ -383,6 +383,8 @@ export default class BubbleView extends View {
         tile.attr('xlink:href', this._getTileUrl.bind(this))
             .attr('x', this._getTileX.bind(this))
             .attr('y', this._getTileY.bind(this));
+
+        tile.exit().remove();
     }
 
     _getTileUrl({tile, circle}) {
