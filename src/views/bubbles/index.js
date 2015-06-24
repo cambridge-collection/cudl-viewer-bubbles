@@ -202,7 +202,6 @@ export default class BubbleView extends View {
             // re-render when the image loads. This will pick up the image
             // dimentions and insert the full res tiles.
             .on('load', function(c, i) {
-                console.log('image load', this, c, i);
                 let elem = this;
                 self._createTiledImageSampler(elem, c);
                 self.requestRender();
@@ -327,7 +326,7 @@ export default class BubbleView extends View {
     _createTiledImageSampler(thumbnailImageEl, c) {
         let [thumbW, thumbH] = getSvgImageDimentions(thumbnailImageEl);
         c.data.tiledImage = new ApproximatedTiledImage(
-            {w: thumbW, h: thumbH, lvl: THUMBNAIL_LVL, maxLevel: this.MAX_LVL});
+            {w: thumbW, h: thumbH, lvl: THUMBNAIL_LVL, maxLevel: MAX_LVL});
     }
 
     renderTiledPreviews(bubble) {
@@ -349,24 +348,12 @@ export default class BubbleView extends View {
         tileGroup.enter()
             .append('g')
                 .attr('class', 'tiles')
-                .attr('transform', ({sample, circle}) => {
-                    let scale = this.scale;
-                    return [
-                        // Scale first as region offsets are in scaled units.
-                        // Also scaling happens around (0, 0) so scaling has to
-                        // be done before offsetting into position under the
-                        // bubble.
-                        `scale(${sample.scale})`,
-                        // Offset the tiled area to place our sampled region at
-                        // (0,0)
-                        `translate(${-sample.region.x}, ${-sample.region.y})`,
-
-                        // The bubbles (0,0) is at the center, so need to offset
-                        // by the radius to place the image at the top-left
-                        `translate(${scale(-circle.radius)} ${scale(-circle.radius)})`
-                    ].join(' ');
-                });
+                .attr('transform', this._getTileGroupTransform.bind(this));
         tileGroup.exit().remove();
+
+        // UPDATE
+        tileGroup
+            .attr('transform', this._getTileGroupTransform.bind(this));
 
         // Create subselection to allow a nested data join under each bubble
         let tile = tileGroup.selectAll('image')
@@ -389,10 +376,13 @@ export default class BubbleView extends View {
                     imageEl.setAttribute('height', h);
                 })
                 .attr('xlink:href', this._getTileUrl.bind(this))
-                .attr('width', this._getTileImageDimention.bind(this))
-                .attr('height', this._getTileImageDimention.bind(this))
-                .attr('x', ({tile, sample}) => (tile.col - sample.tiles.left) * sample.tileSize)
-                .attr('y', ({tile, sample}) => (tile.row - sample.tiles.top) * sample.tileSize)
+                .attr('x', this._getTileX.bind(this))
+                .attr('y', this._getTileY.bind(this));
+
+        // UPDATE
+        tile.attr('xlink:href', this._getTileUrl.bind(this))
+            .attr('x', this._getTileX.bind(this))
+            .attr('y', this._getTileY.bind(this));
     }
 
     _getTileUrl({tile, circle}) {
@@ -404,6 +394,32 @@ export default class BubbleView extends View {
 
     _getTileImageDimention({sample}) {
         return sample.tileSize + this.TILE_OVERLAP;
+    }
+
+    _getTileGroupTransform({sample, circle}) {
+            let scale = this.scale;
+            return [
+                // Scale first as region offsets are in scaled units.
+                // Also scaling happens around (0, 0) so scaling has to
+                // be done before offsetting into position under the
+                // bubble.
+                `scale(${sample.scale})`,
+                // Offset the tiled area to place our sampled region at
+                // (0,0)
+                `translate(${-sample.region.x}, ${-sample.region.y})`,
+
+                // The bubbles (0,0) is at the center, so need to offset
+                // by the radius to place the image at the top-left
+                `translate(${scale(-circle.radius)} ${scale(-circle.radius)})`
+            ].join(' ');
+        }
+
+    _getTileX({tile, sample}) {
+        return (tile.col - sample.tiles.left) * sample.tileSize;
+    }
+
+    _getTileY({tile, sample}) {
+        return (tile.row - sample.tiles.top) * sample.tileSize;
     }
 
     /**
