@@ -102,8 +102,6 @@ export class ApproximatedTiledImage {
      * factor.
      */
     sample(source, scale) {
-        let target = source.scale(scale).roundOut();
-
         // Calculate the exact level required to represent the image at the
         // scale. This will be fractional, e.g. 8.6 rather than an integer
         let exactLvl = log2(Math.max(this.width(), this.height()) * scale);
@@ -120,6 +118,9 @@ export class ApproximatedTiledImage {
         // scale.
         let remainingScale = exactLvl / bestLvl;
         assert(remainingScale > 0 && remainingScale <= 1);
+
+        let bestLvlScale = Math.pow(2, bestLvl) / Math.max(this.width(), this.height());
+        let target = source.scale(bestLvlScale).roundOut();
 
         let startCol = Math.floor(target.left / this.tileSize);
         let colCount = Math.floor(target.right / this.tileSize) + 1 - startCol;

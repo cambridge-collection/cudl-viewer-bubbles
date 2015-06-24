@@ -401,18 +401,19 @@ export default class BubbleView extends View {
     _getTileGroupTransform({sample, circle}) {
             let scale = this.scale;
             return [
+                // The bubbles (0,0) is at the center, so need to offset
+                // by the radius to place the image at the top-left
+                `translate(${scale(-circle.radius)} ${scale(-circle.radius)})`,
+
                 // Scale first as region offsets are in scaled units.
                 // Also scaling happens around (0, 0) so scaling has to
                 // be done before offsetting into position under the
                 // bubble.
                 `scale(${sample.scale})`,
+
                 // Offset the tiled area to place our sampled region at
                 // (0,0)
-                `translate(${-sample.region.x}, ${-sample.region.y})`,
-
-                // The bubbles (0,0) is at the center, so need to offset
-                // by the radius to place the image at the top-left
-                `translate(${scale(-circle.radius)} ${scale(-circle.radius)})`
+                `translate(${-sample.region.x}, ${-sample.region.y})`
             ].join(' ');
         }
 
