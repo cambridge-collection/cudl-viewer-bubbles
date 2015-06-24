@@ -12,6 +12,8 @@ import { bubbleLayout } from './bubblelayout';
 import template from '../../../templates/bubbles-svg.jade';
 import { ApproximatedTiledImage } from './tiledimage';
 import { randomSubregion } from './subregion';
+import { SimilarityItemModel } from '../../models/similarityitemmodel';
+import { InfoCardView } from '../infocard';
 
 
 const XLINK_NS = 'http://www.w3.org/1999/xlink',
@@ -169,7 +171,9 @@ export default class BubbleView extends View {
         let g = a.append('g')
             // Offset the bubble group to the center of the bubble
             .attr('transform', (c) => `translate(${scale(c.x)}, ${scale(c.y)})`)
-            .attr('class', 'bubble');
+            .attr('class', 'bubble')
+            .on('mouseenter', this._onBubbleMouseEvent.bind(this))
+            .on('mouseleave', this._onBubbleMouseEvent.bind(this));
 
         // Create clips required for our circles
         let defs = g.append('defs');
@@ -327,6 +331,20 @@ export default class BubbleView extends View {
         let [thumbW, thumbH] = getSvgImageDimentions(thumbnailImageEl);
         c.data.tiledImage = new ApproximatedTiledImage(
             {w: thumbW, h: thumbH, lvl: THUMBNAIL_LVL, maxLevel: MAX_LVL});
+    }
+
+    _onBubbleMouseEvent(c, i) {
+        let event = d3.event;
+        let elem = event.target;
+        let type = event.type;
+        console.log('_onBubbleMouseEvent', elem, type, c, i);
+
+        if(type === 'mouseenter') {
+            let model = new SimilarityItemModel(c.data, elem);
+            let view = new InfoCardView({model: model});
+            view.render();
+            this.$el.append(view.el);
+        }
     }
 
     renderTiledPreviews(bubble) {
