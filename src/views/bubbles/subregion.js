@@ -28,7 +28,7 @@ export function randomSubregion(srcWidth, srcHeight, destWidth, destHeight, rng)
     let minArea = destWidth * destHeight;
     let maxArea = area(maxRect(aspectRatio, src.width, src.height));
     assert(minArea < maxArea)
-    let randomArea = lerp(minArea, maxArea, rng());
+    let randomArea = getRandomArea(minArea, maxArea, rng);
 
     let [w, h] = getRectangle(aspectRatio, randomArea);
 
@@ -54,4 +54,25 @@ function area([width, height]) {
 
 function lerp(x, y, t) {
     return x + (y - x) * t;
+}
+
+function getRandomArea(min, max, rng) {
+    assert(min < max);
+    assert(min >= 0);
+
+    // The min area continuously varies with the window size, whereas the max
+    // area is fixed for a given image. Therefore, we aim to keep a continuous
+    // output for a given (max, rng) pair, regardless of the min. Only when the
+    // selected area is less than min do we select another which is in range.
+    // This avoids having the bubble content continuously scroll as the window
+    // resizes. E.g. the bubble content makes sudden large changes rather than
+    // continuous small changes.
+    let desired = max * rng();
+    let available = max - min;
+    let selected = max - (desired % available);
+
+    assert(selected >= min);
+    assert(selected <= max);
+
+    return selected;
 }
