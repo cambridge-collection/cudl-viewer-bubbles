@@ -170,7 +170,7 @@ export default class BubbleView extends View {
             .attr('target', '_parent')
         let g = a.append('g')
             // Offset the bubble group to the center of the bubble
-            .attr('transform', (c) => `translate(${scale(c.x)}, ${scale(c.y)})`)
+            .attr('transform', this._bubbleTranslation.bind(this))
             .attr('class', 'bubble')
             .on('mouseenter', this._onBubbleMouseEvent.bind(this))
             .on('mouseleave', this._onBubbleMouseEvent.bind(this));
@@ -245,7 +245,7 @@ export default class BubbleView extends View {
         let scale = this.scale;
 
         bubble.transition()
-            .attr('transform', (c) => `translate(${scale(c.x)}, ${scale(c.y)})`);
+            .attr('transform', this._bubbleTranslation.bind(this));
 
         bubble.select('text.placeholder').transition()
             .attr('font-size', this._placeholderFontSize.bind(this));
@@ -274,6 +274,18 @@ export default class BubbleView extends View {
         // Update the debug circle
         bubble.select('.dbg-circle')
             .attr('r', (c) => scale(c.radius));
+    }
+
+    _bubbleX(c) {
+        return this.scale(c.x);
+    }
+
+    _bubbleY(c) {
+        return this.scale(c.y);
+    }
+
+    _bubbleTranslation(c) {
+        return `translate(${this._bubbleX(c)}, ${this._bubbleY(c)})`;
     }
 
     _borderCircleRadius(c) {
@@ -340,10 +352,16 @@ export default class BubbleView extends View {
         console.log('_onBubbleMouseEvent', elem, type, c, i);
 
         if(type === 'mouseenter') {
-            let model = new SimilarityItemModel(c.data, elem);
+            let x = this._bubbleX(c);
+            let y = this._bubbleY(c);
+            let radius = this.scale(c.radius);
+
+            let model = new SimilarityItemModel(
+                c.data, elem, {x: x, y: y, r: radius});
             let view = new InfoCardView({model: model});
+            $(document.body).append(view.el);
             view.render();
-            this.$el.append(view.el);
+
         }
     }
 

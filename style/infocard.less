@@ -1,0 +1,55 @@
+@right-panel-z-index: 5000;
+
+@font: Georgia, serif;
+@margin: 13px;
+
+@text-colour: #373c42;
+@hr-margin: 12px;
+
+.card {
+    background-color: #f0efeb;
+    background-image:
+        linear-gradient(to bottom, #f0efeb 0%, #e3e2de 26%, fadeout(#f0efeb, 100%)),
+        url("../assets/infocard-bg.png");
+
+    border-radius: 2px;
+    border-color: #f5f4f0;
+    border-width: 1px;
+
+    box-shadow:
+        inset 0 0 10px 3px fadeout(lighten(#f1f1ed, 5%), 70%),
+        0 4px 8px 4px fadeout(black, 80%);
+}
+
+.infocard {
+    .card();
+
+    padding: @margin;
+
+    max-width: 300px;
+
+    font-family: @font;
+    position: fixed;
+
+    z-index: @right-panel-z-index + 1;
+
+    color: @text-colour;
+
+    font-size: 12px;
+
+    hr {
+        display: block;
+        border-top: 2px solid lighten(@text-colour, 20%);
+        margin: @hr-margin 0;
+    }
+
+    h2 {
+        margin: (25px - @margin) (25px - @margin) @hr-margin (25px - @margin);
+        font-size: 17px;
+        text-align: center;
+    }
+}
+
+.infocard > :last-child {
+    margin-bottom: 0;
+}

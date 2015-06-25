@@ -45,6 +45,7 @@ module.exports = {
                     'style-loader',
                     'css-loader?sourceMap!postcss-loader?sourceMap!less-loader?sourceMap')
             },
+            { test: /\.png$/, loader: "url-loader?limit=100000" },
         ]
     },
     plugins: [
