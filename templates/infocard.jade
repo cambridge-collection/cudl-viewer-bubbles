@@ -1,10 +1,11 @@
 h2
-    = title
+    a(href=url, title='View item')
+        = title
     - if(subtitles)
         br
         small
             = subtitles
 - if(abstract)
     hr
-    p.abstract
+    p.abstract(title='Abstract')
         = abstract

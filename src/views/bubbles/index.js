@@ -14,6 +14,7 @@ import { ApproximatedTiledImage } from './tiledimage';
 import { randomSubregion } from './subregion';
 import { SimilarityItemModel } from '../../models/similarityitemmodel';
 import { InfoCardView } from '../infocard';
+import * as cudlurls from '../../util/urls';
 
 
 const XLINK_NS = 'http://www.w3.org/1999/xlink',
@@ -333,10 +334,7 @@ export default class BubbleView extends View {
     }
 
     _bubbleUrl(c) {
-        return [
-            '', 'view', encodeURIComponent(c.data.ID),
-            encodeURIComponent(c.data.firstPage.sequence)
-        ].join('/');
+        return cudlurls.cudlItem(c.data.ID, c.data.firstPage.sequence);
     }
 
     _createTiledImageSampler(thumbnailImageEl, c) {

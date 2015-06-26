@@ -4,7 +4,7 @@ import _ from 'lodash';
 
 import View from './view';
 import { SimilarityItemModel } from '../models/similarityitemmodel';
-
+import * as cudlurls from '../util/urls';
 import infoCardTemplate from '../../templates/infocard.jade';
 
 
@@ -28,7 +28,8 @@ export class InfoCardView extends View {
             this.$el.html(infoCardTemplate({
                 title: this.getTitle(),
                 subtitles: this.getSubTitles(),
-                abstract: this.getAbstractExcerpt()
+                abstract: this.getAbstractExcerpt(),
+                url: this.getItemUrl()
             }));
         }
 
@@ -71,7 +72,7 @@ export class InfoCardView extends View {
             .slice(1)
             .map(dmd => dmd.title && dmd.title.displayForm)
             .filter()
-            .join(' › ')
+            .join(' › ');
     }
 
     getAbstractExcerpt(dmd) {
@@ -82,6 +83,11 @@ export class InfoCardView extends View {
 
         let html = $($.parseHTML(dmd.abstract.displayForm));
         return html.find('p').addBack('p').first().text() || null;
+    }
+
+    getItemUrl() {
+        let hit = this.getHit();
+        return cudlurls.cudlItem(hit.ID, hit.firstPage.sequence);
     }
 }
 _.assign(InfoCardView.prototype, {
