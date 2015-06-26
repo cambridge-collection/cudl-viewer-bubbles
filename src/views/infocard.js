@@ -1,8 +1,10 @@
 import assert from 'assert';
 
 import _ from 'lodash';
+import $ from 'jquery';
 
 import View from './view';
+import { ValueError } from '../util/exceptions';
 import { SimilarityItemModel } from '../models/similarityitemmodel';
 import * as cudlurls from '../util/urls';
 import infoCardTemplate from '../../templates/infocard.jade';
@@ -18,10 +20,29 @@ export class InfoCardView extends View {
                                  `items.model, got: ${options.model}`);
 
         this.model = options.model;
+
+
+        this.onUnderMouseChange = this.onUnderMouseChange.bind(this);
+        $(this.model).on('change:isUnderMouse', this.onUnderMouseChange);
+    }
+
+    onUnderMouseChange() {
+        if(!this.model.isUnderMouse)
+            this.dismiss();
     }
 
     // TODO: define weighted importance values to dmd items to pick useful
     // subset to show.
+
+    dismiss() {
+        // unbind mouse listener
+        $(this.model).off('change:isUnderMouse', this.onUnderMouseChange);
+
+        $(this).trigger('dismissed');
+
+        // TODO: transition/animate removal
+        this.$el.remove();
+    }
 
     render() {
         if(!this.$el.children().length) {

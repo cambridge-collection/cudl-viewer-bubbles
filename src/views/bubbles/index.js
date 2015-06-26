@@ -350,16 +350,35 @@ export default class BubbleView extends View {
         console.log('_onBubbleMouseEvent', elem, type, c, i);
 
         if(type === 'mouseenter') {
-            let x = this._bubbleX(c);
-            let y = this._bubbleY(c);
-            let radius = this.scale(c.radius);
+            let model = c.data.model;
+            if(!c.data.model) {
+                let x = this._bubbleX(c);
+                let y = this._bubbleY(c);
+                let radius = this.scale(c.radius);
 
-            let model = new SimilarityItemModel(
-                c.data, elem, {x: x, y: y, r: radius});
-            let view = new InfoCardView({model: model});
-            $(document.body).append(view.el);
-            view.render();
+                model = new SimilarityItemModel(
+                    c.data, elem, {x: x, y: y, r: radius}, true);
+                c.data.model = model;
+            }
 
+            if(!c.data.infoCardView) {
+                let view = new InfoCardView({model: model});
+                c.data.infoCardView = view;
+
+                $(view).on('dismissed', () => {
+                    if(c.data.infoCardView === view) {
+                        c.data.infoCardView = undefined;
+                    }
+                })
+                $(document.body).append(view.el);
+                view.render();
+            }
+
+            model.isUnderMouse = true;
+        }
+        else if(type === 'mouseleave') {
+            assert(c.data.model);
+            c.data.model.isUnderMouse = false;
         }
     }
 
