@@ -10,6 +10,9 @@ import * as cudlurls from '../util/urls';
 import infoCardTemplate from '../../templates/infocard.jade';
 
 
+const MOUSE_LEAVE_GRACE_PERIOD = 150;
+
+
 export class InfoCardView extends View {
 
     constructor(options) {
@@ -20,23 +23,65 @@ export class InfoCardView extends View {
                                  `items.model, got: ${options.model}`);
 
         this.model = options.model;
+        this.isUnderMouse = false;
 
+        this.dismiss = this.dismiss.bind(this);
+        this.onBubbleUnderMouseChange = this.onBubbleUnderMouseChange.bind(this);
+        this.onUsUnderMouseChange = this.onUsUnderMouseChange.bind(this);
 
-        this.onUnderMouseChange = this.onUnderMouseChange.bind(this);
-        $(this.model).on('change:isUnderMouse', this.onUnderMouseChange);
+        this.bindEvents();
     }
 
-    onUnderMouseChange() {
-        if(!this.model.isUnderMouse)
-            this.dismiss();
+    bindEvents() {
+        $(this.model).on('change:isUnderMouse', this.onBubbleUnderMouseChange);
+        this.$el.on('mouseenter mouseleave', this.onUsUnderMouseChange);
+    }
+
+    unbindEvents() {
+        // unbind mouse listener
+        $(this.model).off('change:isUnderMouse', this.onBubbleUnderMouseChange);
+        this.$el.off('mouseenter mouseleave', this.onUsUnderMouseChange);
+    }
+
+    onBubbleUnderMouseChange() {
+        if(!this.shouldBeVisible())
+            this.scheduleDismiss();
+        else
+            this.cancelDismiss();
+    }
+
+    onUsUnderMouseChange(e) {
+        this.isUnderMouse = e.type === 'mouseenter';
+
+        if(!this.shouldBeVisible())
+            this.scheduleDismiss();
+        else
+            this.cancelDismiss();
+    }
+
+    shouldBeVisible() {
+        return this.isUnderMouse || this.model.isUnderMouse;
+    }
+
+    scheduleDismiss() {
+        if(!this._scheduledDismiss) {
+            this._scheduledDismiss = setTimeout(this.dismiss,
+                                                MOUSE_LEAVE_GRACE_PERIOD);
+        }
+    }
+
+    cancelDismiss() {
+        if(this._scheduledDismiss) {
+            clearTimeout(this._scheduledDismiss);
+            this._scheduledDismiss = undefined;
+        }
     }
 
     // TODO: define weighted importance values to dmd items to pick useful
     // subset to show.
 
     dismiss() {
-        // unbind mouse listener
-        $(this.model).off('change:isUnderMouse', this.onUnderMouseChange);
+        this.unbindEvents();
 
         $(this).trigger('dismissed');
 
