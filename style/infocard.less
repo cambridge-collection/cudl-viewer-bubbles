@@ -1,10 +1,16 @@
 @right-panel-z-index: 5000;
 
 @font: Georgia, serif;
+
 @margin: 13px;
+@card-width: 300px;
 
 @text-colour: #373c42;
 @hr-margin: 12px;
+
+@p-line-height: 1.42857143;
+@font-size: 12px;
+@abstract-max-lines: 4;
 
 .card {
     background-color: #f0efeb;
@@ -26,7 +32,7 @@
 
     padding: @margin;
 
-    max-width: 300px;
+    max-width: @card-width;
 
     font-family: @font;
     position: fixed;
@@ -35,7 +41,7 @@
 
     color: @text-colour;
 
-    font-size: 12px;
+    font-size: @font-size;
 
     hr {
         display: block;
@@ -47,6 +53,14 @@
         margin: (25px - @margin) (25px - @margin) @hr-margin (25px - @margin);
         font-size: 17px;
         text-align: center;
+    }
+
+    .abstract {
+        line-height: @p-line-height;
+
+        max-height: @abstract-max-lines * @font-size * @p-line-height;
+        overflow-y: hidden;
+        // TODO: indicate that the text is cut off in some way
     }
 }
 

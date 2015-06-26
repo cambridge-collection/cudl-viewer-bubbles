@@ -8,6 +8,7 @@ import { ValueError } from '../util/exceptions';
 import { SimilarityItemModel } from '../models/similarityitemmodel';
 import * as cudlurls from '../util/urls';
 import infoCardTemplate from '../../templates/infocard.jade';
+import { Rect } from './bubbles/tiledimage'
 
 
 const MOUSE_LEAVE_GRACE_PERIOD = 150;
@@ -99,16 +100,39 @@ export class InfoCardView extends View {
             }));
         }
 
+        this.renderPosition();
+    }
+
+    renderPosition() {
         let svg = $(this.model.svgElement).closest('svg');
         let svgOffset = svg.offset();
 
-        // let width = parent.width();
+        let bubble = {
+            x: svgOffset.left + this.model.position.x,
+            y: svgOffset.top + this.model.position.y,
+            r: this.model.position.r
+        };
 
-        this.$el.css({
-            top: this.model.position.y + svgOffset.top,
-            // right: width - this.model.position.x - this.model.position.r
-            left: this.model.position.x + svgOffset.left
-        });
+        let screen = {width: $(window).width(), height: $(window).height()};
+
+        let card = {
+            width: this.$el.outerWidth(),
+            height: this.$el.outerHeight()
+        };
+
+        let layout = this.getBestLayout(screen, card, bubble);
+        console.log('css: ', layout.css);
+        this.$el.css(layout.css);
+    }
+
+    getBestLayout(screen, card, bubble) {
+        return _(this.layouts)
+            // Calculate each layout for the given conditions
+            .map(layout => layout(screen, card, bubble))
+            // Rank layouts by 'badness' - currently the proportion of the card
+            // that falls outside the screen
+            .sortBy(l => this.layoutBadness(screen, bubble, l))
+            .first();
     }
 
     getDmdHierachy() {
@@ -157,5 +181,77 @@ export class InfoCardView extends View {
     }
 }
 _.assign(InfoCardView.prototype, {
-    className: 'infocard'
+    className: 'infocard',
+    layouts: [
+        topLeftCornerLayout, topRightCornerLayout,
+        bottomLeftCornerLayout, bottomRightCornerLayout
+    ],
+    layoutBadness: proportionOutsideScreenBadNess
 });
+
+
+class Layout {
+    constructor(rect) {
+        this._rect = rect;
+    }
+
+    get rect() {
+        return this._rect;
+    }
+
+    get css() {
+        return {
+            left: this.rect.left,
+            top: this.rect.top
+        }
+    }
+}
+
+function topRightCornerLayout(screen, card, bubble) {
+    let x = bubble.x - card.width;
+    let y = bubble.y;
+
+    return new Layout(new Rect(x, y, card.width, card.height));;
+}
+
+function bottomRightCornerLayout(screen, card, bubble) {
+    let x = bubble.x - card.width;
+    let y = bubble.y - card.height;
+
+    return new Layout(new Rect(x, y, card.width, card.height));;
+}
+
+function topLeftCornerLayout(screen, card, bubble) {
+    let x = bubble.x;
+    let y = bubble.y - card.height;
+
+    return new Layout(new Rect(x, y, card.width, card.height));;
+}
+
+function bottomLeftCornerLayout(screen, card, bubble) {
+    let x = bubble.x;
+    let y = bubble.y;
+
+    return new Layout(new Rect(x, y, card.width, card.height));;
+}
+
+function proportionOutsideScreenBadNess(screen, bubble, layout) {
+    let r = layout.rect;
+
+    let w, h;
+    if(r.right <= 0)
+        return 1;
+    else if(r.left >= screen.width)
+        return 1;
+    else
+        w = Math.min(screen.width, r.right) - Math.max(0, r.left);
+
+    if(r.bottom <= 0)
+        return 1;
+    else if(r.top >= screen.height)
+        return 1;
+    else
+        h = Math.min(screen.height, r.bottom) - Math.max(0, r.top);
+
+    return 1 - ((w * h) / (r.width * r.height))
+}
