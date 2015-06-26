@@ -28,7 +28,9 @@ export default class CudlService {
         let path = _(['similarity', options.itemId, options.similarityId])
                 .map(encodeURIComponent).join('/');
 
-        let query = {};
+        let query = {
+            count: 10
+        };
         if(options.embedMeta) {
             if(!_.contains(['partial', 'full'], options.embedMeta)) {
                 throw new ValueError('Invalid value for options.embedMeta: ' +
@@ -36,6 +38,11 @@ export default class CudlService {
             }
             query.embedMeta = options.embedMeta;
         }
+
+        if(options.count) {
+            query.count = parseInt(options.count) || query.count
+        }
+
         let assembledQuery = url.format({query: query});
 
         return url.resolve(url.resolve(this.cudlServicesBaseUrl, path),

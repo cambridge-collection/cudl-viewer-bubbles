@@ -8,6 +8,8 @@ import Metadata from './metadata';
 import { getSimilarityIdentifier } from './similaritystrategy';
 
 
+const SIMILARITY_COUNT = 10;
+
 function makeStateMachine() {
     return StateMachine.create({
         initial: 'uninitialised',
@@ -90,7 +92,8 @@ export default class SimilarityModel {
             .getSimilarItems({
                 itemId: this.itemMetadata.getItemId(),
                 similarityId: simId,
-                embedMeta: 'partial'
+                embedMeta: 'partial',
+                count: SIMILARITY_COUNT
             });
         let loadingToken = this.loadingModel.startLoading();
 
