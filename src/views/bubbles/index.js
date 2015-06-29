@@ -550,7 +550,7 @@ export default class BubbleView extends View {
 _.assign(BubbleView.prototype, {
     className: 'bubble-view',
 
-    STROKE_WIDTH: 10,
+    STROKE_WIDTH: 6,
     // The amount the preview image overlaps with the stroke to avoid gaps at
     // the border with the stroke
     PREVIEW_IMAGE_OVERLAP: 0,
