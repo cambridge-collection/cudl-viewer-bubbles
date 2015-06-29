@@ -353,7 +353,7 @@ export default class BubbleView extends View {
     _onBubbleMouseEvent(c, i) {
         let event = d3.event;
         let elem = event.target;
-        let type = event.type;
+        let type = getNormalisedSVGMouseEventType(event);
 
         if(type === 'mouseenter' || type === 'touchend') {
             // Stop further processing of the touch event, otherwise it becomes
@@ -584,4 +584,14 @@ function getImageDimentions(url) {
     htmlImg.src = url;
 
     return deferred.promise;
+}
+
+function getNormalisedSVGMouseEventType(e) {
+    // d3 polyfills mouseenter and mouseleave events using mouseover/mouseout
+    // but doesn't change e.type passed to the handler.
+    if(e.type === 'mouseover')
+        return 'mouseenter';
+    else if(e.type === 'mouseout')
+        return 'mouseleave';
+    return e.type;
 }
