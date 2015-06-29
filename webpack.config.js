@@ -2,6 +2,8 @@ var path = require('path');
 
 var ExtractTextPlugin = require('extract-text-webpack-plugin');
 
+var SIMILARITY_CSS = path.join(__dirname, 'style/similarity.less');
+
 
 module.exports = {
     // configuration
@@ -40,10 +42,15 @@ module.exports = {
                 loader: require.resolve('jade-loader')
             },
             {
-                test: /\.less$/,
+                test: SIMILARITY_CSS,
                 loader: ExtractTextPlugin.extract(
                     'style-loader',
                     'css-loader?sourceMap!postcss-loader?sourceMap!less-loader?sourceMap')
+            },
+            {
+                test: /\.less$/,
+                exclude: SIMILARITY_CSS,
+                loader: 'css-loader!postcss-loader!less-loader',
             },
             { test: /\.png$/, loader: "url-loader?limit=100000" },
         ]
