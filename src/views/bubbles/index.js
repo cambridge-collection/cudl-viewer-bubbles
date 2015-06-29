@@ -6,6 +6,7 @@ import url from 'url';
 
 import _ from 'lodash';
 import seedrandom from 'seedrandom';
+import Q from 'q';
 
 import View from '../view';
 import { bubbleLayout } from './bubblelayout';
@@ -67,9 +68,6 @@ export default class BubbleView extends View {
                 this.render.bind(this), 0);
         }
     }
-
-    // getWidth() { return this.$el.width(); }
-    // getHeight() { return this.$el.height(); }
 
     getRandomGenerator() {
         // The creation/seeding of the RNG is critical to consistently
@@ -205,13 +203,7 @@ export default class BubbleView extends View {
         imageG.append('image')
             .attr('class', 'thumbnail')
             .attr('preserveAspectRatio', 'xMidYMid slice')
-            // re-render when the image loads. This will pick up the image
-            // dimentions and insert the full res tiles.
-            .on('load', function(c, i) {
-                let elem = this;
-                self._createTiledImageSampler(elem, c);
-                self.requestRender();
-            })
+            .each(this._loadTiles.bind(this))
             .attr('xlink:href', this._previewImageThumbnailUrl.bind(this))
             .attr('x', this._previewImageThumbnailXY.bind(this))
             .attr('y', this._previewImageThumbnailXY.bind(this))
@@ -338,10 +330,24 @@ export default class BubbleView extends View {
         return cudlurls.cudlItem(c.data.ID, c.data.firstPage.sequence);
     }
 
-    _createTiledImageSampler(thumbnailImageEl, c) {
-        let [thumbW, thumbH] = getSvgImageDimentions(thumbnailImageEl);
+    _loadTiles(c) {
+        // re-render when the image loads. This will pick up the image
+        // dimensions and insert the full res tiles.
+        getImageDimentions(this._previewImageThumbnailUrl(c))
+        .then(([w, h]) => {
+            this._createTiledImageSampler(w, h, c);
+            this.requestRender();
+        })
+        .catch(error => {
+            console.error(
+                'Unable to load preview image (and therefore tiles) for: ', c);
+        })
+        .done();
+    }
+
+    _createTiledImageSampler(w, h, c) {
         c.data.tiledImage = new ApproximatedTiledImage(
-            {w: thumbW, h: thumbH, lvl: THUMBNAIL_LVL, maxLevel: MAX_LVL});
+            {w: w, h: h, lvl: THUMBNAIL_LVL, maxLevel: MAX_LVL});
     }
 
     _onBubbleMouseEvent(c, i) {
@@ -400,6 +406,7 @@ export default class BubbleView extends View {
     }
 
     renderTiledPreviews(bubble) {
+        let self = this;
         let tileGroup = bubble.select('g.preview-image').selectAll('g.tiles')
             .data((circle, i) => {
                 // tiledImage is only created when the preview image is loaded.
@@ -439,11 +446,9 @@ export default class BubbleView extends View {
                     console.log('rendering tile: ', tile, sample);
                     return 'tile';
                 })
-                .on('load', function() {
+                .each(function(data) {
                     let imageEl = this;
-                    let [w, h] = getSvgImageDimentions(imageEl);
-                    imageEl.setAttribute('width', w);
-                    imageEl.setAttribute('height', h);
+                    self._setTileSize(imageEl, data);
                 })
                 .attr('xlink:href', this._getTileUrl.bind(this))
                 .attr('x', this._getTileX.bind(this))
@@ -529,6 +534,20 @@ export default class BubbleView extends View {
         // tiles to render a 100px wide area (no the 1000px area).
         return tiledImage.sample(subregion, scale);
     }
+
+    _setTileSize(imageEl, data) {
+        let tileUrl = this._getTileUrl(data);
+        getImageDimentions(tileUrl)
+            .then(([w, h]) => {
+                imageEl.setAttribute('width', w);
+                imageEl.setAttribute('height', h);
+            })
+            .catch(error => {
+                console.error('Unable to get dimensions for tile:' +
+                              ` ${tileUrl}`);
+            })
+            .done();
+    }
 };
 _.assign(BubbleView.prototype, {
     className: 'bubble-view',
@@ -545,19 +564,24 @@ _.assign(BubbleView.prototype, {
     TILE_OVERLAP: 1
 })
 
-function getSvgImageDimentions(imageEl) {
-    // The imageEl must have dispatched a "load" event before this is called
-    let imageUrl = imageEl.getAttributeNS(XLINK_NS, 'href');
+// SVG's image el doesn't provide an API for accessing the dimensions of the
+// loaded image. The HTML img element does though, and because the SVG image
+// has already loaded the URL, the browser shouldn't request it again if we
+// create an image el with the same URL, allowing us to access the
+// dimensions.
+function getImageDimentions(url) {
+    let deferred = Q.defer();
 
-    // SVG's image el doesn't provide an API for accessing the dimensions of the
-    // loaded image. The HTML img element does though, and because the SVG image
-    // has already loaded the URL, the browser shouldn't request it again if we
-    // create an image el with the same URL, allowing us to access the
-    // dimensions.
     let htmlImg = new Image();
-    htmlImg.src = imageUrl;
-    assert(htmlImg.width);
-    assert(htmlImg.height);
+    htmlImg.addEventListener('load', () => {
+        deferred.resolve([htmlImg.width, htmlImg.height]);
+    });
 
-    return [htmlImg.width, htmlImg.height];
+    htmlImg.addEventListener('error', (e) => {
+        deferred.reject(e);
+    });
+
+    htmlImg.src = url;
+
+    return deferred.promise;
 }
