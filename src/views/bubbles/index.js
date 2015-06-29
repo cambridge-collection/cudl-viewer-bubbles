@@ -236,6 +236,18 @@ export default class BubbleView extends View {
     renderBubblesUpdate(bubble) {
         let scale = this.scale;
 
+        // Update placement of infocard model
+        bubble.each(c => {
+            if(!c.data.model)
+                return;
+
+            c.data.model.position = {
+                x: this._bubbleX(c),
+                y: this._bubbleY(c),
+                r: this.scale(c.radius)
+            }
+        });
+
         bubble.transition()
             .attr('transform', this._bubbleTranslation.bind(this));
 
