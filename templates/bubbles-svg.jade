@@ -16,7 +16,7 @@ svg(version="1.1", xmlns="http://www.w3.org/2000/svg",
                 feMergeNode(in="SourceGraphic")
 
         filter(id="previewThumbnailBlur")
-            feGaussianBlur(in="SourceImage", stdDeviation="5")
+            feGaussianBlur(in="SourceGraphic", stdDeviation="5")
     style(type="text/css")
         = require('../style/bubbles.less')
     g.bubbles
