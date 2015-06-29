@@ -174,7 +174,8 @@ export default class BubbleView extends View {
             .attr('transform', this._bubbleTranslation.bind(this))
             .attr('class', 'bubble')
             .on('mouseenter', this._onBubbleMouseEvent.bind(this))
-            .on('mouseleave', this._onBubbleMouseEvent.bind(this));
+            .on('mouseleave', this._onBubbleMouseEvent.bind(this))
+            .on('touchend', this._onBubbleMouseEvent.bind(this));
 
         // Create clips required for our circles
         let defs = g.append('defs');
@@ -347,9 +348,16 @@ export default class BubbleView extends View {
         let event = d3.event;
         let elem = event.target;
         let type = event.type;
-        console.log('_onBubbleMouseEvent', elem, type, c, i);
 
-        if(type === 'mouseenter') {
+        if(type === 'mouseenter' || type === 'touchend') {
+            // Stop further processing of the touch event, otherwise it becomes
+            // a click event.
+            if(type === 'touchend') {
+                event.preventDefault();
+            }
+
+            let isTouch = type === 'touchend';
+
             let model = c.data.model;
             if(!c.data.model) {
                 let x = this._bubbleX(c);
@@ -357,12 +365,15 @@ export default class BubbleView extends View {
                 let radius = this.scale(c.radius);
 
                 model = new SimilarityItemModel(
-                    c.data, elem, {x: x, y: y, r: radius}, true);
+                    c.data, elem, {x: x, y: y, r: radius}, !isTouch);
                 c.data.model = model;
             }
 
             if(!c.data.infoCardView) {
-                let view = new InfoCardView({model: model});
+                let view = new InfoCardView({
+                    model: model,
+                    dismissOnFocusLost: isTouch
+                });
                 c.data.infoCardView = view;
 
                 $(view).on('dismissed', () => {
@@ -371,10 +382,16 @@ export default class BubbleView extends View {
                     }
                 })
                 $(document.body).append(view.el);
+
+                // When the modal is triggered via touch we dismiss the dialog
+                // when it looses focus, so it needs to start focused.
+                if(isTouch)
+                    view.$el.focus();
+
                 view.render();
             }
 
-            model.isUnderMouse = true;
+            model.isUnderMouse = !isTouch;
         }
         else if(type === 'mouseleave') {
             assert(c.data.model);

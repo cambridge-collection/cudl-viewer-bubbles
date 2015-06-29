@@ -25,23 +25,44 @@ export class InfoCardView extends View {
 
         this.model = options.model;
         this.isUnderMouse = false;
+        this.dismissOnFocusLost = !!options.dismissOnFocusLost;
 
         this.dismiss = this.dismiss.bind(this);
         this.onBubbleUnderMouseChange = this.onBubbleUnderMouseChange.bind(this);
         this.onUsUnderMouseChange = this.onUsUnderMouseChange.bind(this);
+        this.onFocusLost = this.onFocusLost.bind(this);
 
         this.bindEvents();
+
+        // Need to be focusable so that we can track losing focus from taps
+        // outside
+        if(this.dismissOnFocusLost)
+            this.$el.attr('tabindex', -1);
     }
 
     bindEvents() {
         $(this.model).on('change:isUnderMouse', this.onBubbleUnderMouseChange);
         this.$el.on('mouseenter mouseleave', this.onUsUnderMouseChange);
+        this.$el.on('blur', '*', this.onFocusLost);
+        this.$el.on('blur', this.onFocusLost);
     }
 
     unbindEvents() {
         // unbind mouse listener
         $(this.model).off('change:isUnderMouse', this.onBubbleUnderMouseChange);
         this.$el.off('mouseenter mouseleave', this.onUsUnderMouseChange);
+        this.$el.off('blur', '*', this.onFocusLost);
+        this.$el.off('blur', this.onFocusLost);
+    }
+
+    onFocusLost(e) {
+        if(this.dismissOnFocusLost) {
+            // Ignore losing focus to elements under us
+            if(this.$el.has(e.relatedTarget).length)
+                return;
+
+            this.dismiss();  // No delay
+        }
     }
 
     onBubbleUnderMouseChange() {
