@@ -53,7 +53,7 @@ export default class BubbleView extends View {
         let throttledLayout = _.throttle(this.createLayout.bind(this), 50);
         $(this.viewportModel).on('change:dimensions', () => {
             throttledLayout();
-            // Render immediatley to update the viewport coordinates
+            // Render immediately to update the viewport coordinates
             this.render();
         });
 
@@ -228,8 +228,6 @@ export default class BubbleView extends View {
 
         g.append('circle')
             .attr('class', 'dbg-circle')
-            // Our parent is offset, so we just need to position outself
-            // our radius from the top/left of our
             .attr('cx', 0)
             .attr('cy', 0)
             .attr('r', (c) => scale(c.radius));
