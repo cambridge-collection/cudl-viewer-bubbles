@@ -19,9 +19,15 @@ function circleArea(radius) {
 export function getRectangle(aspectRatio, area) {
     let w = aspectRatio;
     let h = 1;
-    // w * h = 1 (area = 1)
-    let sqrtArea = Math.sqrt(area);
-    return [w * sqrtArea, h * sqrtArea];
+
+    let scaleFactor = Math.sqrt(area) / Math.sqrt(w*h);
+
+    let rect = [w * scaleFactor, h * scaleFactor];
+
+    assert(Math.abs(rect[0] * rect[1] - area) < area / 1e15);
+    assert(Math.abs(rect[0] / rect[1] - aspectRatio) < 1e-14);
+
+    return rect;
 }
 
 /**
