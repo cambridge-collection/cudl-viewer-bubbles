@@ -84,7 +84,7 @@ export default class BubbleView extends View {
             rng: this.getRandomGenerator(),
             radius: hit => hit.score,
             attempts: 2000,
-            initialFreeSpaceRatio: 1.3,
+            initialFreeSpaceRatio: 0.8,
             padding:  0.1
         };
     }
@@ -96,9 +96,13 @@ export default class BubbleView extends View {
     }
 
     createLayout() {
+        let layoutStart = performance.now();
         // TODO: Could run the layout on a worker thread to avoid janking the UI
         this.layout = bubbleLayout(this.getLayoutOptions())
                                   (this.getBubbleData());
+
+        let layoutTime = performance.now() - layoutStart;
+        console.log(`layout ${layoutTime}ms`, this.getLayoutOptions(), this.layout);
 
         // Transform the layout's normalised coordinate space to screen space.
         // The x and y axis have the same scale.
