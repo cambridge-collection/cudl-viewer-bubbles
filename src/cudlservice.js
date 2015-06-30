@@ -25,7 +25,7 @@ export default class CudlService {
     }
 
     getSimilarityUrl(options) {
-        let path = _(['similarity', options.itemId, options.similarityId])
+        let path = _(['xtf', 'similarity', options.itemId, options.similarityId])
                 .map(encodeURIComponent).join('/');
 
         let query = {
