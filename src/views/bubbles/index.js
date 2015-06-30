@@ -457,7 +457,6 @@ export default class BubbleView extends View {
         tile.enter()
             .append('image')
                 .attr('class', ({tile, sample}) => {
-                    console.log('rendering tile: ', tile, sample);
                     return 'tile';
                 })
                 .each(function(data) {

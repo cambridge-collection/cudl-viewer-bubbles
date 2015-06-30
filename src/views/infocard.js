@@ -142,7 +142,6 @@ export class InfoCardView extends View {
         };
 
         let layout = this.getBestLayout(screen, card, bubble);
-        console.log('css: ', layout.css);
         this.$el.css(layout.css);
     }
 
