@@ -13,9 +13,10 @@ It exports itself as a function on the global `cudl` object provided by the
 CUDL Viewer, and assumes the presence of existing CUDL Viewer dependencies such
 as jQuery.
 
-It's integrated with the CUDL Viewer via `git-submodule`. My plan going forward
-is to use Webpack for the rest of the CUDL Viewer UI, and have the Viewer code
-depend on this repo as a private npm package.
+It's integrated with the CUDL Viewer by manually copying and pasting the build
+js/css files. My plan going forward is to use Webpack for the rest of the CUDL
+Viewer UI, and have the Viewer code depend on this repo as a private npm
+package.
 
 ## Developing
 
@@ -52,4 +53,7 @@ Run `$ grunt clean webpack:production` to build the code into `dist/`.
 4. Remove the files committed in dist/ (so that they don't constantly show up
    in `$ git status` when developing) and increment the version in
    `package.json` in preparation for the next development phase
-5. Update the version in `cudl-viewer` with `git subtree pull`
+5. Update the version in `cudl-viewer` by manually copying:
+
+    * `dist/similarity.js` to `src/main/webapp/scripts/`
+    * `dist/similarity.css` to `src/main/webapp/styles/`
