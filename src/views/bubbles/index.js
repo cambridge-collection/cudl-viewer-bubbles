@@ -96,13 +96,9 @@ export default class BubbleView extends View {
     }
 
     createLayout() {
-        let layoutStart = performance.now();
         // TODO: Could run the layout on a worker thread to avoid janking the UI
         this.layout = bubbleLayout(this.getLayoutOptions())
                                   (this.getBubbleData());
-
-        let layoutTime = performance.now() - layoutStart;
-        console.log(`layout ${layoutTime}ms`, this.getLayoutOptions(), this.layout);
 
         // Transform the layout's normalised coordinate space to screen space.
         // The x and y axis have the same scale.
