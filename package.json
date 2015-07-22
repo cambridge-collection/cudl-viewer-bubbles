@@ -16,6 +16,7 @@
     "extract-text-webpack-plugin": "^0",
     "file-loader": "^0",
     "grunt-contrib-clean": "^0",
+    "grunt-webpack": "^1",
     "jade": "^1",
     "jade-loader": "^0",
     "javascript-state-machine": "^2",
