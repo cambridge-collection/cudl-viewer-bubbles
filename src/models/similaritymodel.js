@@ -1,5 +1,6 @@
 import assert from 'assert';
 
+import $ from 'jquery';
 import StateMachine from 'javascript-state-machine';
 
 import CudlService from '../cudlservice';

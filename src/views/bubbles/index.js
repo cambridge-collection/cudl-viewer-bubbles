@@ -7,6 +7,7 @@ import url from 'url';
 import _ from 'lodash';
 import seedrandom from 'seedrandom';
 import Q from 'q';
+import $ from 'jquery';
 
 import View from '../view';
 import { bubbleLayout } from './bubblelayout';

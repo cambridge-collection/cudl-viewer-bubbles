@@ -1,3 +1,6 @@
+import $ from 'jquery';
+import Spinner from 'spin.js';
+
 import View from './view';
 import BubbleView from './bubbles';
 

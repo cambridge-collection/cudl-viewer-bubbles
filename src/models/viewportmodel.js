@@ -1,4 +1,4 @@
-
+import $ from 'jquery';
 
 /**
  * Models the state of the viewport dimensions that the bubble view renders

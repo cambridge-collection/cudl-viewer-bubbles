@@ -1,3 +1,5 @@
+import $ from 'jquery';
+
 import { IllegalStateException } from '../util/exceptions';
 
 
