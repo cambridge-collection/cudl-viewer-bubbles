@@ -1,6 +1,6 @@
 {
   "name": "cudl-viewer-bubbles",
-  "version": "0.0.4",
+  "version": "1.0.0-beta.1",
   "description": "The CUDL Viewer's similarity bubble view",
   "repository": {
     "type": "git",
