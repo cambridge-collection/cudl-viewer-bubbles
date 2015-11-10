@@ -1,3 +1,15 @@
+//------------------------------------------------------------------------------
+// Imports for side-effects:
+
+// The polyfill has to be imported before the rest of the code.
+import 'babel-core/polyfill';
+// Ensure we can use console.xxx() on IE without breaking
+import 'console-polyfill';
+
+// Apply similarity styles
+import '../style/similarity.less';
+//------------------------------------------------------------------------------
+
 import url from 'url';
 
 import $ from 'jquery';
