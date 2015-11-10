@@ -14,8 +14,6 @@ import url from 'url';
 
 import $ from 'jquery';
 
-import cudl from 'cudl';
-
 import Metadata from './models/metadata';
 import CudlService from './cudlservice';
 import SimilarityModel from './models/similaritymodel';
@@ -24,25 +22,26 @@ import ViewportModel from './models/viewportmodel';
 import { RootSimilarityView } from './views';
 
 
-export default function setupSimilarityTab(data, docId) {
-    let metadata = new Metadata(data, docId);
-    let cudlService = new CudlService(url.resolve(cudl.services, '/v1/'));
+export function setupSimilarityTab({viewerModel, docId, servicesBaseUrl,
+                                    imageServerBaseUrl}) {
+    let metadata = new Metadata(viewerModel.getMetadata(), docId);
+    let cudlService = new CudlService(url.resolve(servicesBaseUrl, '/v1/'));
     let loadingModel = new LoadingModel();
     let similarityModel = new SimilarityModel(metadata, cudlService, loadingModel);
     let viewportModel = new ViewportModel();
 
-    $(cudl).on('change.cudl.pagenum', (e, page) =>
-        similarityModel.setPage(page - 1));
+    viewerModel.events.on('change:pageNumber', () =>
+        similarityModel.setPage(viewerModel.getPageNumber() - 1));
 
-    // Load the first/current page
-    similarityModel.setPage(cudl.pagenum - 1);  // We use 0-based page indexes
+    // Load the first/current page. -1 as we use 0-based page indexes
+    similarityModel.setPage(viewerModel.getPageNumber() - 1);
 
     var view = new RootSimilarityView({
         el: $('#similaritems .similarity-container')[0],
         similarityModel: similarityModel,
         loadingModel: loadingModel,
         viewportModel: viewportModel,
-        imageServerBaseUrl: cudl.imageServer
+        imageServerBaseUrl: imageServerBaseUrl
     }).render();
 
     // Watch for our tab being shown/hidden
@@ -56,20 +55,3 @@ export default function setupSimilarityTab(data, docId) {
         }
     });
 }
-
-/*
-    var spinOpts = {
-        scale: 2,
-        opacity: 0.1,
-        shadow: true,
-        top: '50%',
-        left: '50%',
-        className: 'blah-spinner'
-    };
-    var containerEl = $('#similaritems .similarity-container')[0];
-    console.assert(containerEl instanceof Element);
-    new Spinner(spinOpts).spin(containerEl);
-*/
-
-// Export our entry point to cudl.
-cudl.setupSimilarityTab = setupSimilarityTab;
