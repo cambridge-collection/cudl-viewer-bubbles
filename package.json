@@ -6,6 +6,7 @@
     "type": "git",
     "url": "https://bitbucket.org/CUDL/cudl-viewer-bubbles"
   },
+  "main": "./src/index.js",
   "private": true,
   "devDependencies": {
   },
