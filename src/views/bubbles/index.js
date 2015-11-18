@@ -32,8 +32,8 @@ export default class BubbleView extends View {
 
         if(!_.isObject(options.similarity)) {
             throw new ValueError(
-                `Expected a similarity object for options.model, got: ` +
-                `${options.model}`);
+                `Expected a similarity object for options.similarity, got: ` +
+                `${options.similarity}`);
         }
 
         if(!_.isString(options.similarityIdentifier) ||
