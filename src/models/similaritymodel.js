@@ -4,7 +4,7 @@ import $ from 'jquery';
 import StateMachine from 'javascript-state-machine';
 
 import CudlService from '../cudlservice';
-import { IllegalStateException } from '../util/exceptions';
+import { ValueError, IllegalStateException } from '../util/exceptions';
 import Metadata from './metadata';
 import { getSimilarityIdentifier } from './similaritystrategy';
 

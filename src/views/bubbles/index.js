@@ -17,6 +17,7 @@ import { randomSubregion } from './subregion';
 import { SimilarityItemModel } from '../../models/similarityitemmodel';
 import { InfoCardView } from '../infocard';
 import * as cudlurls from '../../util/urls';
+import { ValueError } from '../../util/exceptions';
 
 
 const XLINK_NS = 'http://www.w3.org/1999/xlink',

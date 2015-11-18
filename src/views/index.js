@@ -1,3 +1,5 @@
+import assert from 'assert';
+
 import $ from 'jquery';
 import Spinner from 'spin.js';
 
