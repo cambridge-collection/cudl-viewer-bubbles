@@ -9,7 +9,11 @@ module.exports = new WebpackConfig().merge({
             {
                 test: /\.js$/,
                 include: path.resolve(__dirname, '../src'),
-                loader: 'babel'
+                loader: 'babel',
+                query: {
+                    cacheDirectory: true,
+                    presets: ['es2015']
+                }
             },
             {
                 test: /\.jade$/,
