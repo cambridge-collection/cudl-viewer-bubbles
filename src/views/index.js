@@ -1,6 +1,7 @@
 import assert from 'assert';
 
 import $ from 'jquery';
+import assign from 'lodash/assign';
 import Spinner from 'spin.js';
 
 import View from './view';
@@ -118,6 +119,6 @@ class LoadingView extends View {
         return this;
     }
 }
-_.assign(LoadingView.prototype, {
+assign(LoadingView.prototype, {
     className: 'loading'
 });

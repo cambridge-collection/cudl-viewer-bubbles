@@ -1,7 +1,13 @@
 import util from 'util';
 import url from 'url';
 
-import _ from 'lodash';
+import isString from 'lodash/isString';
+import isEmpty from 'lodash/isEmpty';
+import includes from 'lodash/includes';
+import isObject from 'lodash/isObject';
+import pipe from 'lodash/fp/pipe';
+import map from 'lodash/fp/map';
+import join from 'lodash/fp/join';
 import $ from 'jquery';
 import Q from 'q';
 
@@ -10,7 +16,7 @@ import { ValueError } from './util/exceptions';
 
 export default class CudlService {
     constructor(cudlServicesBaseUrl) {
-        if(!_.isString(cudlServicesBaseUrl) || _.isEmpty(cudlServicesBaseUrl))
+        if(!isString(cudlServicesBaseUrl) || isEmpty(cudlServicesBaseUrl))
             throw new ValueError(util.format(
                 'cudlServicesBaseUrl was not a non-empty string: %s',
                 cudlServicesBaseUrl));
@@ -25,14 +31,14 @@ export default class CudlService {
     }
 
     getSimilarityUrl(options) {
-        let path = _(['xtf', 'similarity', options.itemId, options.similarityId])
-                .map(encodeURIComponent).join('/');
+        let path = pipe(map(encodeURIComponent), join('/'))([
+            'xtf', 'similarity', options.itemId, options.similarityId]);
 
         let query = {
             count: 10
         };
         if(options.embedMeta) {
-            if(!_.contains(['partial', 'full'], options.embedMeta)) {
+            if(!includes(['partial', 'full'], options.embedMeta)) {
                 throw new ValueError('Invalid value for options.embedMeta: ' +
                                      `${options.embedMeta}`);
             }
@@ -58,7 +64,7 @@ export default class CudlService {
      * @return A promise of the similarity response.
      */
     getSimilarItems(options) {
-        if(!_.isObject(options))
+        if(!isObject(options))
             throw new ValueError(`options was not an object: ${options}`);
         if(!options.itemId)
             throw new ValueError(`options.itemId is required`);

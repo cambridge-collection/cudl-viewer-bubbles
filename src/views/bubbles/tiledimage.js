@@ -61,11 +61,14 @@
 
  import assert from 'assert';
 
+ import isNumber from 'lodash/isNumber';
+ import assign from 'lodash/assign';
+
  import { ValueError } from '../../util/exceptions';
 
 export class ApproximatedTiledImage {
     constructor(options) {
-        options = _.assign({}, options, {
+        options = assign({}, options, {
             tileSize: 256,
             maxLevel: 13
         });
@@ -202,7 +205,7 @@ class Sample {
             throw new ValueError(`tiles was not a Rect: ${tiles}`);
         if(level % 1 !== 0)
             throw new ValueError(`level was not an integer: ${level}`);
-        if(!_.isNumber(scale))
+        if(!isNumber(scale))
             throw new ValueError(`scale was not a number: ${scale}`);
 
         this.region = region,

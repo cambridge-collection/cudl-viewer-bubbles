@@ -1,4 +1,10 @@
-import _ from 'lodash';
+import pipe from 'lodash/fp/pipe';
+import map from 'lodash/fp/map';
+import filter from 'lodash/fp/filter';
+import orderBy from 'lodash/fp/orderBy';
+import first from 'lodash/fp/first';
+import range from 'lodash/fp/range';
+import zip from 'lodash/fp/zip';
 
 import { ValueError } from '../util/exceptions';
 
@@ -27,22 +33,23 @@ export function getSimilarityIdentifier(metadata, page) {
     // but for robustness I'm just scanning the whole structure tree (which is
     // a few hundred nodes at most).
 
-    let id = _(metadata.getFlattenedLogicalStructures())
+    let id = pipe(
         // Add the depth and position of the structure node
-        .map(([structure, parents], i) => [structure, parents.length, i])
+        map(([i, [structure, parents]]) => [structure, parents.length, i]),
         // Some logical structures have broken start/end positions
         // (end < start). Ignore these.
-        .filter(([struc,,]) => struc.startPagePosition <= struc.endPagePosition)
+        filter(([struc,,]) => struc.startPagePosition <= struc.endPagePosition),
         // Exclude structures which our page isn't in
-        .filter(([struc,,]) => struc.startPagePosition <= p &&
-                               struc.endPagePosition >= p)
-        .sortByAll([
+        filter(([struc,,]) => struc.startPagePosition <= p &&
+                              struc.endPagePosition >= p),
+        orderBy([
             ([struc,,]) => struc.endPagePosition - struc.startPagePosition,
             ([,depth]) => depth,
             ([,,position]) => position],
-            [true, false, true])
-        .map(([,,position]) => position)
-        .first();
+            ['asc', 'desc', 'asc']),
+        map(([,,position]) => position),
+        first
+    )(enumerate(metadata.getFlattenedLogicalStructures()));
 
     if(id == undefined) {
         throw new ValueError(
@@ -50,4 +57,8 @@ export function getSimilarityIdentifier(metadata, page) {
     }
 
     return String(id);
+}
+
+function enumerate(items) {
+    return zip(range(0, items.length), items);
 }

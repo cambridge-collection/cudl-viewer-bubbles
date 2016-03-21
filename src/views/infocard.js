@@ -1,6 +1,14 @@
 import assert from 'assert';
 
-import _ from 'lodash';
+import pipe from 'lodash/fp/pipe';
+import map from 'lodash/fp/map';
+import filter from 'lodash/fp/filter';
+import identity from 'lodash/fp/identity';
+import sortBy from 'lodash/fp/sortBy';
+import first from 'lodash/fp/first';
+import slice from 'lodash/fp/slice';
+import join from 'lodash/fp/join';
+import assign from 'lodash/assign';
 import $ from 'jquery';
 
 import View from './view';
@@ -146,21 +154,21 @@ export class InfoCardView extends View {
     }
 
     getBestLayout(screen, card, bubble) {
-        return _(this.layouts)
+        return pipe(
             // Calculate each layout for the given conditions
-            .map(layout => layout(screen, card, bubble))
+            map(layout => layout(screen, card, bubble)),
             // Rank layouts by 'badness' - currently the proportion of the card
             // that falls outside the screen
-            .sortBy(l => this.layoutBadness(screen, bubble, l))
-            .first();
+            sortBy(l => this.layoutBadness(screen, bubble, l)),
+            first
+        )(this.layouts);
     }
 
     getDmdHierachy() {
         let hit = this.getHit();
         let dmds = hit.descriptiveMetadata;
-        return _(this.getHit().structurePath)
-            .map(s => dmds[s.descriptiveMetadataID])
-            .value();
+        return map(s => dmds[s.descriptiveMetadataID])
+                  (this.getHit().structurePath);
     }
 
     getHit() {
@@ -178,11 +186,12 @@ export class InfoCardView extends View {
     }
 
     getSubTitles() {
-        return _(this.getDmdHierachy())
-            .slice(1)
-            .map(dmd => dmd.title && dmd.title.displayForm)
-            .filter()
-            .join(' › ');
+        return pipe(
+            slice(1),
+            map(dmd => dmd.title && dmd.title.displayForm),
+            filter(identity),
+            join(' › ')
+        )(this.getDmdHierachy());
     }
 
     getAbstractExcerpt(dmd) {
@@ -200,7 +209,7 @@ export class InfoCardView extends View {
         return cudlurls.cudlItem(hit.ID, hit.firstPage.sequence);
     }
 }
-_.assign(InfoCardView.prototype, {
+assign(InfoCardView.prototype, {
     className: 'infocard',
     layouts: [
         topLeftCornerLayout, topRightCornerLayout,

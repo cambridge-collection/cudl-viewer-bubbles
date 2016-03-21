@@ -1,4 +1,5 @@
-import _ from 'lodash';
+import isEqual from 'lodash/isEqual';
+import assign from 'lodash/assign';
 import $ from 'jquery';
 
 
@@ -23,8 +24,8 @@ export class SimilarityItemModel {
     }
 
     set position(pos) {
-        if(!_.isEqual(this._position, pos)) {
-            this._position = _.assign({}, pos);
+        if(!isEqual(this._position, pos)) {
+            this._position = assign({}, pos);
             $(this).trigger('change');
             $(this).trigger('change:position');
         }

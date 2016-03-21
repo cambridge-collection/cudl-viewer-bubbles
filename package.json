@@ -23,7 +23,7 @@
     "jquery": "^1",
     "less": "^2",
     "less-loader": "^2",
-    "lodash": "^3",
+    "lodash": "^4",
     "postcss-loader": "^0",
     "q": "^1",
     "seedrandom": "^2",

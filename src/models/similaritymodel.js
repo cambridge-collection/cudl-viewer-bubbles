@@ -1,6 +1,8 @@
 import assert from 'assert';
 
 import $ from 'jquery';
+import defer from 'lodash/defer';
+import isFunction from 'lodash/isFunction';
 import StateMachine from 'javascript-state-machine';
 
 import CudlService from '../cudlservice';
@@ -56,7 +58,7 @@ export default class SimilarityModel {
     onenterstate(event, from, to) {
         // Defer the event trigger to prevent errors in event handlers
         // affecting us.
-        _.defer(() => $(this).trigger('change:state'));
+        defer(() => $(this).trigger('change:state'));
     }
 
     /**
@@ -82,7 +84,7 @@ export default class SimilarityModel {
         assert(this.fsm.can('startLoading'));
 
         if(this.fsm.is('loading')) {
-            assert(_.isFunction(this.abortCurrentReq));
+            assert(isFunction(this.abortCurrentReq));
             this.abortCurrentReq();
             this.abortCurrentReq = null;
         }
@@ -113,13 +115,13 @@ export default class SimilarityModel {
             }
             // Defer marking loading as finished to allow those dependant on our
             // defered event triggers to start loading before we stop.
-            _.defer(() => loadingToken.markStopped());
+            defer(() => loadingToken.markStopped());
         }).fail(() => {
             if(this.similarityPromise === similarityPromise) {
                 assert(this.fsm.is('loading'));
                 this.fsm.fail();
             }
-            _.defer(() => loadingToken.markStopped());
+            defer(() => loadingToken.markStopped());
         }).done();
     }
 

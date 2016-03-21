@@ -2,7 +2,14 @@ import assert from 'assert';
 import util from 'util';
 
 import d3 from 'd3';
-import lodash from 'lodash';
+import pipe from 'lodash/fp/pipe';
+import map from 'lodash/fp/map';
+import sortBy from 'lodash/fp/sortBy';
+import sum from 'lodash/fp/sum';
+import maximum from 'lodash/fp/max';
+import each from 'lodash/each';
+import assign from 'lodash/assign';
+import isObject from 'lodash/isObject';
 import seedrandom from 'seedrandom';
 
 
@@ -44,7 +51,7 @@ export function bubbleLayout(options) {
 
 class BubbleLayout {
     constructor(options) {
-        this.options = _.assign({
+        this.options = assign({
             // The aspect ratio of the rectangle to layout the bubbles in.
             // Default is square (1/1)
             aspectRatio: 1,
@@ -106,14 +113,17 @@ class BubbleLayout {
     _createLayoutCircles(values) {
         // Wrap each circle in our own layout object representing the position of
         // the circle in the layout.
-        let circles = _(values).map(value => ({
-            radius: this.options.radius(value),
-            data: value
-        })).sortBy(circle => -circle.radius).value();
+        let circles = pipe(
+            map(value => ({
+                radius: this.options.radius(value),
+                data: value
+            })),
+            sortBy(circle => -circle.radius)
+        )(values);
 
         // Normalise the radiuses so that the largest radius is 1
-        let max = _(circles).map(c => c.radius).max();
-        _.each(circles, circle => circle.radius = circle.radius / max);
+        let max = pipe(map(c => c.radius), maximum)(circles);
+        each(circles, circle => circle.radius = circle.radius / max);
 
         return circles;
     }
@@ -125,12 +135,13 @@ class BubbleLayout {
         let padding = this.options.padding;
 
         // The area covered by all circles in our layout
-        let circlesArea = _(circles)
+        let circlesArea = pipe(
             // Area includes the extra radius for padding. Note that circles
             // are normalised, so the largest circle is radius 1, therefore
             // maxRadius * padding = 1 * padding = padding
-            .map(circle => circleArea(circle.radius + (padding / 2)))
-            .sum();
+            map(circle => circleArea(circle.radius + (padding / 2))),
+            sum
+        )(circles);
 
         // As long as our ease() function always generates an easier (larger)
         // layout area, we'll eventually find a solution. (Of course the rng
@@ -147,7 +158,7 @@ class BubbleLayout {
             let layout = this._tryLayout(circles, w, h);
 
             if(layout !== null) {
-                assert(_.isObject(layout));
+                assert(isObject(layout));
 
                 // Some incidental metadata on the generated layout
                 layout.meta = {

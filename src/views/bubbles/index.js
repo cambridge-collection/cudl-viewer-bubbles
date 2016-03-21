@@ -4,7 +4,12 @@ import util from 'util';
 import assert from 'assert';
 import url from 'url';
 
-import _ from 'lodash';
+import map from 'lodash/fp/map';
+import isObject from 'lodash/isObject';
+import isString from 'lodash/isString';
+import isEmpty from 'lodash/isEmpty';
+import throttle from 'lodash/throttle';
+import assign from 'lodash/assign';
 import seedrandom from 'seedrandom';
 import Q from 'q';
 import $ from 'jquery';
@@ -30,14 +35,14 @@ export default class BubbleView extends View {
     constructor(options) {
         super(options);
 
-        if(!_.isObject(options.similarity)) {
+        if(!isObject(options.similarity)) {
             throw new ValueError(
                 `Expected a similarity object for options.similarity, got: ` +
                 `${options.similarity}`);
         }
 
-        if(!_.isString(options.similarityIdentifier) ||
-            _.isEmpty(options.similarityIdentifier)) {
+        if(!isString(options.similarityIdentifier) ||
+            isEmpty(options.similarityIdentifier)) {
             throw new ValueError(
                 `options.similarityIdentifier must be a non-empty string: ` +
                 `\`${options.similarityIdentifier}\``);
@@ -52,7 +57,7 @@ export default class BubbleView extends View {
         this.renderRequested = false;
 
 
-        let throttledLayout = _.throttle(this.createLayout.bind(this), 50);
+        let throttledLayout = throttle(this.createLayout.bind(this), 50);
         $(this.viewportModel).on('change:dimensions', () => {
             throttledLayout();
             // Render immediately to update the viewport coordinates
@@ -447,9 +452,9 @@ export default class BubbleView extends View {
         // Create subselection to allow a nested data join under each bubble
         let tile = tileGroup.selectAll('image')
             .data(({sample, circle}) => {
-                return _.map(sample.tilesList(),
-                             tile => ({tile: tile, sample: sample,
-                                       circle: circle}));
+                return map(tile => ({tile: tile, sample: sample,
+                                       circle: circle}))
+                          (sample.tilesList());
             });
 
         tile.enter()
@@ -560,7 +565,7 @@ export default class BubbleView extends View {
             .done();
     }
 };
-_.assign(BubbleView.prototype, {
+assign(BubbleView.prototype, {
     className: 'bubble-view',
 
     STROKE_WIDTH: 6,

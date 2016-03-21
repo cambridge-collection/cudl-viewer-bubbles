@@ -1,6 +1,7 @@
 import util from 'util';
 
-import _ from 'lodash';
+import isObject from 'lodash/isObject';
+import concat from 'lodash/fp/concat';
 
 import { ValueError } from '../util/exceptions';
 
@@ -10,7 +11,7 @@ import { ValueError } from '../util/exceptions';
  */
 export default class Metadata {
     constructor(metadata, itemId) {
-        if(!_.isObject(metadata))
+        if(!isObject(metadata))
             throw new ValueError(util.format('metadata must be an object, got: %s', metadata))
         this.metadata = metadata;
         this.itemId = itemId;
@@ -46,7 +47,7 @@ export default class Metadata {
 
             if(structure.children && structure.children.length) {
                 for(let subStructure of this._getFlattenedLogicalStructures(
-                    structure.children, _(parents).concat([structure]).value())) {
+                        structure.children, concat(parents, [structure]))) {
                     yield subStructure;
                 }
             }
