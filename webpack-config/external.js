@@ -1,7 +1,7 @@
 var path = require('path');
 
-var WebpackConfig = require('webpack-config');
+var Config = require('webpack-config').Config;
 
 
-module.exports = new WebpackConfig()
+module.exports = new Config()
     .extend(path.resolve(__dirname, './loaders.js'));

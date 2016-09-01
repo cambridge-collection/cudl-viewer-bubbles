@@ -1,9 +1,9 @@
 var path = require('path');
 
-var WebpackConfig = require('webpack-config');
+var Config = require('webpack-config').Config;
 
 
-module.exports = new WebpackConfig().merge({
+module.exports = new Config().merge({
     module: {
         loaders: [
             {

@@ -31,7 +31,7 @@
     "spin.js": "^2",
     "style-loader": "^0",
     "url-loader": "^0",
-    "webpack-config": "^4"
+    "webpack-config": "^6"
   },
   "peerDependencies": {
     "babel-core": "^6",
