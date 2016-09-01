@@ -21,7 +21,7 @@
     "jade": "^1",
     "jade-loader": "^0",
     "javascript-state-machine": "^2",
-    "jquery": "^1 || ^2",
+    "jquery": "^1 || ^2 || ^3",
     "less": "^2",
     "less-loader": "^2",
     "lodash": "^4",
