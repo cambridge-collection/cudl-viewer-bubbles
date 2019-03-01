@@ -13,6 +13,7 @@ module.exports = new Config().merge({
                     loader: 'babel-loader',
                     options: {
                         cacheDirectory: true,
+                        presets: ['@babel/preset-env']
                     }
                 }
             },
