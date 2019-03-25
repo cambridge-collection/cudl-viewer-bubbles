@@ -28,6 +28,7 @@ module.exports = new Config().merge({
                 use: [
                     'style-loader',
                     'css-loader',
+                    'postcss-loader',
                     'less-loader'
                 ]
             },
