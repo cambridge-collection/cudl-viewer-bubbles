@@ -2,7 +2,7 @@
 // Imports for side-effects:
 
 // The polyfill has to be imported before the rest of the code.
-import 'babel-polyfill';
+import '@babel/polyfill';
 // Ensure we can use console.xxx() on IE without breaking
 import 'console-polyfill';
 
