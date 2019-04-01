@@ -350,10 +350,10 @@ export default class BubbleView extends View {
             destWH, destWH, rng);
 
         if(imageUrl) {
-            let iiif_params = "/"+subregion.x+","+subregion.y+","+subregion.width+","
-                +subregion.height+"/"+size+","+size+"/0/default.jpg";
+            let iiif_params = `/${subregion.x},${subregion.y},${subregion.width},`
+                +`${subregion.height}/${size},${size}/0/default.jpg`;
 
-            return url.resolve(this.imageServerBaseUrl, imageUrl+ iiif_params);
+            return url.resolve(this.imageServerBaseUrl, imageUrl+iiif_params);
 
         }
 
