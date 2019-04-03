@@ -163,6 +163,9 @@ export default class BubbleView extends View {
         // Nested data join to render each tile
         this.renderTiledPreviews(bubble);
 
+        // Render IIIF tiles.
+        this.renderIIIFPreviews(bubble);
+
         return this;
     }
 
@@ -328,11 +331,35 @@ export default class BubbleView extends View {
 
     _previewImageThumbnailUrl(c) {
         let imageUrl = c.data.firstPage.thumbnailImageURL;
-        if(!imageUrl) {
-            console.warn('Similarity hit has no image', c);
-            return null;
+        if (imageUrl) {
+            return url.resolve(this.imageServerBaseUrl, imageUrl);
         }
-        return url.resolve(this.imageServerBaseUrl, imageUrl);
+
+        // No thumbnailImage found, build IIIF Image URL instead.
+        imageUrl = c.data.firstPage.IIIFImageURL;
+        let width = c.data.firstPage.imageWidth;
+        let height = c.data.firstPage.imageHeight;
+        let size = this._previewImageThumbnailSize(c);
+        let destWH = this.scale(c.radius * 2);
+
+        // Using a consistent seed for each bubble ensures the same subregion
+        // is selected each time.
+        let rng = seedrandom(`${c.data.ID}/${c.data.firstPage.sequence}`);
+
+        let subregion = randomSubregion(width, height,
+            destWH, destWH, rng);
+
+        if(imageUrl) {
+            let iiif_params = `/${subregion.x},${subregion.y},${subregion.width},`
+                +`${subregion.height}/${size},${size}/0/default.jpg`;
+
+            return url.resolve(this.imageServerBaseUrl, imageUrl+iiif_params);
+
+        }
+
+        console.warn('** Similarity hit has no image', c);
+        return null;
+
     }
 
     _previewImageThumbnailSize(c) {
@@ -351,15 +378,20 @@ export default class BubbleView extends View {
         // re-render when the image loads. This will pick up the image
         // dimensions and insert the full res tiles.
         getImageDimentions(this._previewImageThumbnailUrl(c))
-        .then(([w, h]) => {
-            this._createTiledImageSampler(w, h, c);
-            this.requestRender();
-        })
-        .catch(error => {
-            console.error(
-                'Unable to load preview image (and therefore tiles) for: ', c);
-        })
-        .done();
+            .then(([w, h]) => {
+                if (typeof c.data.firstPage.displayImageURL !== 'undefined' &&
+                    c.data.firstPage.displayImageURL.endsWith("dzi")) {
+                    // this is used for DZI images.
+                    this._createTiledImageSampler(w, h, c);
+                }
+                this.requestRender();
+            })
+            .catch(error => {
+                console.error(error);
+                console.error(
+                    'Unable to load preview image (and therefore tiles) for: ', c);
+            })
+            .done();
     }
 
     _createTiledImageSampler(w, h, c) {
@@ -476,6 +508,39 @@ export default class BubbleView extends View {
             .attr('y', this._getTileY.bind(this));
 
         tile.exit().remove();
+    }
+
+
+
+
+    // Update the tile Group to add IIIF images.
+    renderIIIFPreviews(bubble) {
+
+        // If thumbnail matches the IIIF format, copy the thumbnail image
+        // to the tiles object to match the tiles preview.
+        bubble.selectAll('g.preview-image').each(function (d) {
+
+            let preview = d3.select(this);
+            let thumbnail = preview.select('image.thumbnail');
+            let href = thumbnail.attr('href');
+
+            if (href.match(/.*\d+(\.\d+)?,\d+(\.\d+)?,\d+(\.\d+)?,\d+(\.\d+)?\/\d+(\.\d+)?,\d+(\.\d+)?\/0\/default\.jpg$/)) {
+
+                let tileGroup = preview.append('g')
+                    .attr('class', 'tiles')
+                    .attr('transform', 'translate(' + thumbnail.attr('x')
+                        + ', ' + thumbnail.attr('y') + ') scale(1.0)');
+
+                tileGroup.append('image')
+                    .attr('class', 'tile')
+                    .attr('href', thumbnail.attr('href'))
+                    .attr('height', thumbnail.attr('height'))
+                    .attr('width', thumbnail.attr('width'))
+                    .attr('x', '0')
+                    .attr('y', '0');
+            }
+        });
+
     }
 
     _getTileUrl({tile, circle}) {
