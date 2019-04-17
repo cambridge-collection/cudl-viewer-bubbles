@@ -56,6 +56,11 @@ export default class BubbleView extends View {
         this.svgNode = null;
         this.renderRequested = false;
 
+        if (isEmpty(this.similarity.hits) ||
+            this.similarity.hits==0) {
+            this.viewportModel.state='noItems';
+            return
+        }
 
         let throttledLayout = throttle(this.createLayout.bind(this), 50);
         $(this.viewportModel).on('change:dimensions', () => {

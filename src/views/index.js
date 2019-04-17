@@ -8,6 +8,7 @@ import View from './view';
 import BubbleView from './bubbles';
 
 import failedTemplate from '../../templates/failed.jade';
+import noItemsTemplate from '../../templates/noitems.jade';
 
 
 /**
@@ -64,6 +65,11 @@ export class RootSimilarityView extends View {
         }
         else if(state === 'loading') {
         }
+        else if (state === 'noItems') {
+            view = new NoItemsStateView({
+                model: this.model
+            });
+        }
         else if(state === 'failed') {
             view = new FailedStateView({
                 model: this.model
@@ -90,6 +96,12 @@ class FailedStateView extends View {
     }
 }
 
+class NoItemsStateView extends View {
+    render() {
+        this.$el.html(noItemsTemplate());
+        return this;
+    }
+}
 
 class LoadingView extends View {
     constructor(options) {
