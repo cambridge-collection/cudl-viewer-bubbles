@@ -21,10 +21,11 @@ function makeStateMachine() {
         // - loading
         events: [
             { name: 'startLoading',
-              from: ['uninitialised', 'idle', 'failed', 'loading'],
-              to: 'loading' },
+                from: ['uninitialised', 'idle', 'noItems', 'failed', 'loading'],
+                to: 'loading' },
             { name: 'finishLoading', from: 'loading', to: 'idle' },
-            { name: 'fail', from: 'loading', to: 'failed' }
+            { name: 'fail', from: 'loading', to: 'failed' },
+            { name: 'noItems', from: 'idle', to: 'noItems' }
         ]
     });
 }
@@ -112,7 +113,14 @@ export default class SimilarityModel {
                 this.similarity = similarity;
                 assert(this.fsm.is('loading'));
                 this.fsm.finishLoading();
+
+                if (typeof this.similarity.hits != 'undefined'
+                    && this.similarity.hits.length===0) {
+
+                    this.fsm.noItems();
+                }
             }
+
             // Defer marking loading as finished to allow those dependant on our
             // defered event triggers to start loading before we stop.
             defer(() => loadingToken.markStopped());
