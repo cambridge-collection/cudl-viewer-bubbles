@@ -2,7 +2,7 @@ import assert from 'assert';
 
 import $ from 'jquery';
 import assign from 'lodash/assign';
-import Spinner from 'spin.js';
+import {Spinner} from 'spin.js';
 
 import View from './view';
 import BubbleView from './bubbles';
@@ -111,7 +111,6 @@ class LoadingView extends View {
 
         this.spinOpts = options.spinOpts || {
             scale: 2,
-            opacity: 0.1,
             shadow: true,
             top: '50%',
             left: '50%',
